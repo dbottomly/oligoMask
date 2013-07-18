@@ -1,0 +1,12 @@
+Package: @PKGNAME@
+Title: @VCF_TYPE@ Variant Mask
+Description: @VCF_TYPE@ variant mask for use with the @MANUF@ @CHIPNAME@
+Version: @VERSION@
+Author: @AUTHOR@
+Maintainer: @AUTHOR@ <@AUTHOREMAIL@>
+LazyLoad: yes
+imports: oligoMask
+Depends: R (>= 3.0.0),methods
+License: @LIC@
+biocViews: AnnotationData
+ZipData: no

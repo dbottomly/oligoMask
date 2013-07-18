@@ -1,0 +1,28 @@
+\documentclass[10pt]{article}
+\usepackage[margin=1.0in]{geometry}
+\SweaveOpts{keep.source=TRUE} 
+
+\title{oligoMask Vignette}
+\author{Daniel Bottomly}
+%\VignetteIndexEntry{oligoMask}
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+
+
+\section{The oligoMask package}
+
+The oligoMask package is designed to work in conjunction with the oligo package to facilitate removal of aberrant probe expression prior to RMA summarization using median polish for Affymetrix arrays.  Currently it works by subtracting suspect probes from the overall expression matrix prior to the call to the RMA function.  These suspect probe annotations are stored in an SQLite database which can be wrapped in an R package with appropriate metadata to facilitate sharing and reproducibility.  As our main use case involves mice and the Affymetrix Mouse Gene array, we provide convenience functions to enable creation of an oligoMask database using VCF files from the Sanger Mouse Genomes project () and the tab-delimited probe sequence files distributed by Affymetrix as well as standard Bioconductor functionality.  As a demonstration, we will utilize the array data of () and a variant mask generated from chr19 of the Sanger data. 
+
+
+
+
+
+\section{Future Directions}
+
+Though currently we only have support for Affymetrix Gene arrays, additional Affymetrix array types supported by oligo can be added upon request.  We will add support for the use of the ff package in conjunction with oligo in the near future. We also hope to be able to interface with the maskBAD package in order to be able to provide expression based masking as well.
+
+\end{document}

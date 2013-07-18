@@ -1,0 +1,43 @@
+importClassesFrom(VariantAnnotation, ScanVcfParam)
+importFrom(VariantAnnotation, scanVcf, ScanVcfParam, scanVcfHeader, header, vcfWhich, 'vcfWhich<-')
+#importClassesFrom(oligoClasses, FeatureSet, GeneFeatureSet, ExonFeatureSet, DBPDInfo, AffyGenePDInfo)
+#importFrom(oligoClasses, db, kind)
+#importFrom(oligo, rma, basicRMA, exprs)
+importFrom(reshape2, melt)
+importClassesFrom(Biostrings, PDict, DNAStringSet, MIndex)
+importFrom(Biostrings, matchPDict, reverseComplement, unlist)
+importClassesFrom(BSgenome, BSgenome)
+importClassesFrom(GenomicRanges, GRanges)
+importFrom(GenomicRanges, as.data.frame)
+
+importClassesFrom(Biobase, NChannelSet, eSet, VersionedBiobase, Versioned)
+
+#switched DBI and RSQLite to Depends in order to get the AffyGenePDInfo class to be
+#initialized...
+#importMethodsFrom(DBI, dbCommit, dbConnect, dbDisconnect, dbGetQuery, dbExistsTable)
+#importFrom(RSQLite, SQLite, sqliteQuickSQL)
+#importMethodsFrom(RSQLite, dbGetPreparedQuery, dbBeginTransaction)
+
+importClassesFrom(graph, graphNEL)
+importFrom(graph, graphNEL, ugraph)
+importFrom(RBGL, sp.between)
+
+#core functions for parsing vcf files into a database
+export(populate.db.tbl.schema.list, make.vcf.table, create.sanger.mouse.vcf.db)
+
+exportClasses(VariantMaskParams, TableSchemaList, VcfDB)
+
+#methods for VariantMaskParams
+export(maskDb, validProbeQuery,getProbeDf, VariantMaskParams)
+
+#methods for TableSchemaList
+export(createTable, insertStatement, mergeStatement, searchTables, searchCols, searchDict, SangerTableSchemaList)
+
+#methods for VcfDB
+export(tbsl, vcfDb)
+
+#export other functions for use with oligo
+export(maskRMA)
+
+#example data
+export(om.vcf.file, om.tab.file, om.db.file, om.lo.file, test.pd.1.0.st.v1)
