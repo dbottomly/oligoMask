@@ -94,7 +94,39 @@ Daniel Bottomly
 \code{\link{scanVcf}}, \code{\linkS4class{TableSchemaList}}, \code{\linkS4class{ScanVcfParam}}, \code{\linkS4class{BSgenome}}
 }
 \examples{
-	print("hello")
+    if (require(BSgenome.Mmusculus.UCSC.mm9))
+    {
+    	vcf.files <- om.vcf.file()
+    	vcf.labels <- "SNV"
+    	probe.tab.file <- om.tab.file()
+    	#seven strains besides the reference strain that are used in the CC
+    	strain.names <- c("CASTEiJ", "AJ", "PWKPhJ", "129S1", "NZO", "NODShiLtJ", "WSBEiJ")
+    	bs.genome <- BSgenome.Mmusculus.UCSC.mm9
+
+    	#probably shouldn't do this in real analyses unless you have to
+    	seqlevels(bs.genome) <- sub("chr", "", seqlevels(bs.genome))
+
+    	db.schema <- SangerTableSchemaList()
+    	db.name=tempfile()
+
+    	keep.category <- "main"
+    	window.size <- 1000
+    	max.mismatch <- 0
+    	should.debug <- TRUE
+
+    	#duplications in this file, remove and recreate...
+    	tab.aln <- read.delim(om.lo.file(), sep="\t", header=TRUE, stringsAsFactors=FALSE)
+    	limit.chr <- GRanges(seqnames="19", ranges=IRanges(start=min(tab.aln$start), end=max(tab.aln$end)/4), strand="*")
+
+    	create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name, keep.category, window.size, max.mismatch, limit.chr, should.debug)
+
+    	db.con <- dbConnect(SQLite(), db.name)
+
+    	var.ovls <- dbGetQuery(db.con, "SELECT * FROM probe_to_snp NATURAL JOIN reference NATURAL JOIN probe_align NATURAL JOIN probe_info limit 5")
+
+    	var.ovls
+      }
+
 }
 \keyword{utilities}
 
