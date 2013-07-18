@@ -5,11 +5,22 @@ The `oligoMask` package provides tools for masking out problematic Affymetrix pr
 using VCF files and the oligo package
 
 It has been established that the presence of single nucleotide variants in 
-transcript regions that are interograted by microarray probes can cause spurious 
+transcript regions that are interrogated by microarray probes can cause spurious 
 decreases in signal.  In the case of Affymetrix arrays, more than one probe is present 
 in a given probeset/transcript-cluster and this provides the opportunity to remove probes 
 that could potentially be affected prior to background correction, normalization and 
 summarization as in the RMA method. This package is intended to provide the user a convenient 
-interface between several packages to faciliate analysis of Affymetrix arrays especially the 
+interface between several packages to facilitate analysis of Affymetrix arrays especially the 
 Gene and Exon varieties. Although, originally designed for the analysis of expression data 
-from mouse recombinant inbred intercrosses use with human expression arrays is also possible.
+from mouse recombinant inbred inter-crosses use with human expression arrays is also possible.
+
+How to contribute
+---------
+
+Please send me an email if you are interested in contributing.
+
+Contact
+---------
+
+Dan Bottomly
+bottomly@ohsu.edu
