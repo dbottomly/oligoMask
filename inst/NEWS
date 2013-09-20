@@ -1,0 +1,5 @@
+VERSION 0.99.02
+
+Bux fixes for the methods of TableSchemaList as well as the SangerTableSchemaList to deal with INDELS that have the same exact position as SNVs.
+Addition of a unit test for the overlapping INDEL/SNV scenario and tweaks to test.createTable and test.insertStatement to address the bux fixes of the TableSchemaList methods.
+Moved all temporary databases to tempfiles in the unit tests.

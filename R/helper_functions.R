@@ -85,6 +85,9 @@ make.ref.dta <- function(vcf.list)
 
 make.allele.dta <- function(vcf.list)
 {
+    annots <- vcf.list[["vcf_annot"]]
+    annot.dta <- matrix(annots, nrow=1, dimnames=list(NULL, names(annots)))
+                               
     #Note that the ALT element was changed from comma-delimited to list-based in the current code in bioc 2.13, use the below hack for now which should be backwards compatible 
     alleles.list <- lapply(vcf.list[["vcf_list"]], function(x)
            {
@@ -106,11 +109,14 @@ make.allele.dta <- function(vcf.list)
                 return(cbind(allele.dta[rep(x, length(alleles)),c("seqnames", "start", "end")], alleles=alleles, allele_num=allele_num, stringsAsFactors=FALSE))
                })), stringsAsFactors=FALSE)
     
-    return(use.allele.dta)
+    return(cbind(use.allele.dta, annot.dta[rep(1, nrow(use.allele.dta)),,drop=FALSE]))
 }
 
 make.genotype.dta <- function(vcf.list)
 {
+    annots <- vcf.list[["vcf_annot"]]
+    annot.dta <- matrix(annots, nrow=1, dimnames=list(NULL, names(annots)))
+    
     geno.list <- lapply(vcf.list[["vcf_list"]], function(x)
            {
                 return(cbind(as.data.frame(x$rowData)[,c("seqnames", "start", "end")], GT=x$GENO$GT, stringsAsFactors=FALSE))
@@ -130,7 +136,7 @@ make.genotype.dta <- function(vcf.list)
     names(use.geno)[5:6] <- c("geno_chr", "allele_num")    
     use.geno$geno_chr <- sub("chr_num\\.", "", use.geno$geno_chr)
     
-    return(use.geno)
+    return(cbind(use.geno, annot.dta[rep(1, nrow(use.geno)),,drop=FALSE]))
 }
 
 granges.to.dta <- function(x)
@@ -149,6 +155,9 @@ granges.to.dta <- function(x)
 
 make.probe.to.snp <- function(vcf.list)
 {
+    annots <- vcf.list[["vcf_annot"]]
+    annot.dta <- matrix(annots, nrow=1, dimnames=list(NULL, names(annots)))
+    
     vcf.list <- vcf.list[["vcf_list"]]
     
     p.s.list <- lapply(names(vcf.list), function(x)
@@ -161,5 +170,5 @@ make.probe.to.snp <- function(vcf.list)
     
     res.ps.dta <- data.frame(do.call("rbind", p.s.list), stringsAsFactors=FALSE)
     
-    return(res.ps.dta)
+    return(cbind(res.ps.dta, annot.dta[rep(1, nrow(res.ps.dta)),,drop=FALSE]))
 }

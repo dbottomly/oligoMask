@@ -10,9 +10,111 @@ data("SunGeneFS")
 
 #currently not testing the following trivial methods that are exported
 
-#SangerTableSchemaList, tbsl, vcfDb, om.vcf.file, om.tab.file, VariantMaskParams, maskDb
+#tbsl, vcfDb, om.vcf.file, om.tab.file, VariantMaskParams, maskDb
 #searchTables, searchCols, searchDict
 
+
+test.SangerTableSchemaList <- function()
+{
+    ##encountered an issue with the reference table not being unique with regards to vcf_type, so adjusted the queries and added a unit test
+    
+    #test data taken from the real vcf files
+    all.strain.names <- c("129P2","129S1","129S5","AJ","AKRJ","BALBcJ","C3HHeJ","C57BL6NJ","CASTEiJ","CBAJ","DBA2J","FVBNJ","LPJ","NODShiLtJ","NZOHlLtJ","PWKPhJ","SPRETEiJ","WSBEiJ")
+    
+    snp.vcf.list <- list(`1:16511945-16511969`=list(rowData=GRanges(seqnames=Rle("1"), ranges=IRanges(start=16511962, end=16511962), strand=Rle("*")),
+                                                    REF=DNAStringSet("G"),
+                                                    ALT="A",
+                                                    GENO=list(GT=matrix(c(rep("0/0", 16), "1/1", "."), ncol=18, dimnames=list(NULL, all.strain.names)),
+                                                              FI=matrix(c(rep(1, 17), NA),ncol=18, dimnames=list(NULL, all.strain.names)))),
+                         `1:72635669-72635693`=list(rowData=GRanges(seqnames=Rle("1"), ranges=IRanges(start=72635685, end=72635685), strand=Rle("*")),
+                                                    REF=DNAStringSet("G"),
+                                                     ALT="A",
+                                                     GENO=list(GT=matrix(c(rep("0/0", 3), rep("1/1", 2), "0/0", "1/1", rep("0/0", 3), "1/1", rep("0/0", 5), rep("1/1", 2)), ncol=18, dimnames=list(NULL, all.strain.names)),
+                                                               FI=matrix(rep(1, 18), ncol=18, dimnames=list(NULL, all.strain.names)))))
+    
+    indel.vcf.list <- list(`1:5070129-5070153`=list(rowData=GRanges(seqnames=Rle("1"), ranges=IRanges(start=5070140, end=5070175), strand=Rle("*")),
+                                   REF=DNAStringSet("TCTAGGTACCCTTGGTTTTCTTGGGAAAGGCTGGGC"),
+                                   ALT="T",
+                                   GENO=list(GT=matrix(c(rep(".", 10), "1/1", rep(".", 7)), ncol=18, dimnames=list(NULL, all.strain.names)),
+                                             FI=matrix(c(rep(NA, 10), 1, rep(NA, 7)),ncol=18, dimnames=list(NULL, all.strain.names)))),
+                           `1:72635669-72635693`=list(rowData=GRanges(seqnames=Rle("1"), ranges=IRanges(start=72635685, end=72635685), strand=Rle("*")),
+                                   REF=DNAStringSet("G"),
+                                   ALT="GTC",
+                                   GENO=list(GT=matrix(c(rep(".", 8), "1/1", rep(".", 9)), ncol=18, dimnames=list(NULL, all.strain.names)),
+                                             FI=matrix(c(rep(NA, 8), 1, rep(NA, 9)),ncol=18, dimnames=list(NULL, all.strain.names)))))
+    
+    
+    tbsl <- SangerTableSchemaList()
+    
+    db.con <- dbConnect(SQLite(), tempfile())
+    
+    #pre-add the probe alignment table
+    probe.align.dta <- data.frame(probe_align_id=1:3, probe_chr="1", probe_start=c(5070129, 16511945,72635669), probe_end=c(5070153, 16511969, 72635693), probe_ind=1:3, stringsAsFactors=FALSE)
+    
+    dbWriteTable(db.con, "probe_align", probe.align.dta, row.names=FALSE)
+    
+    #snvs
+    all.snp.list <- list(vcf_list=snp.vcf.list, vcf_annot=c(vcf_name="test_1.txt", type="SNV"))
+    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=all.snp.list, use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
+    
+    #indels
+    
+    all.indel.list <- list(vcf_list=indel.vcf.list, vcf_annot=c(vcf_name="test_2.txt", type="INDEL"))
+    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=all.indel.list, use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
+    
+    test <- dbGetQuery(db.con, "SELECT * FROM reference NATURAL JOIN genotype NATURAL JOIN allele NATURAL JOIN vcf_annot")
+    
+    all.vcf <- c(snp.vcf.list, indel.vcf.list)
+    
+    test.target <- do.call("rbind", lapply(1:length(all.vcf), function(x)
+           {
+                cur.vcf <- all.vcf[[x]]
+                
+                if (x %in% 1:2)
+                {
+                    vcf_name = "test_1.txt"
+                    type = "SNV"
+                }
+                else
+                {
+                    vcf_name = "test_2.txt"
+                    type = "INDEL"
+                }
+                
+                filter <- all(is.na(cur.vcf$GENO$FI) == FALSE & cur.vcf$GENO$FI == 1)
+                geno_chr <- rep(1:2, length(all.strain.names))
+                strain <- as.character(sapply(all.strain.names, function(y) rep(y,2)))
+                allele_num <- as.character(sapply(as.character(cur.vcf$GENO$GT), function(y)
+                                     {
+                                        if (y != ".")
+                                        {
+                                            return(strsplit(y, "\\/")[[1]])
+                                        }
+                                        else
+                                        {
+                                            return(c(-1,-1))
+                                        }
+                                     }))
+                geno.vec <- c(".", as.character(cur.vcf$REF), cur.vcf$ALT)
+                alleles <- geno.vec[as.numeric(allele_num)+2]
+                
+                return(data.frame(ref_id=x, seqnames=as.character(seqnames(cur.vcf$rowData)), start=start(cur.vcf$rowData), end=end(cur.vcf$rowData), filter=filter, geno_chr=geno_chr, allele_num=allele_num, strain=strain, alleles=alleles,  vcf_name=vcf_name, type=type, stringsAsFactors=FALSE))
+           }))
+    
+    test.target.sort <- test.target[do.call("order", test.target),]
+    rownames(test.target.sort) <- NULL
+    
+    test.target.sort$filter <- as.character(test.target.sort$filter)
+    test.target.sort$allele_num <- as.numeric(test.target.sort$allele_num)
+    
+    test <- test[,names(test.target.sort)]
+    test.sort <- test[do.call("order", test),]
+    rownames(test.sort) <- NULL
+    
+    checkEquals(test.sort, test.target.sort)
+    
+    dbDisconnect(db.con)
+}
 
 test.createTable <- function()
 {
@@ -20,7 +122,7 @@ test.createTable <- function()
     
     valid.tables <- names(tbsl@tab.list)
     
-    db.con <- dbConnect(SQLite(), "temp.db")
+    db.con <- dbConnect(SQLite(), tempfile())
     
     for(i in valid.tables)
     {
@@ -53,7 +155,7 @@ test.createTable <- function()
                                 dbGetQuery(db.con, paste("pragma table_info(",x,")"))
                            }))
                     
-                    key.vals <- sapply(f.keys, "[[", "ext.keys")
+                    key.vals <- as.character(unlist(sapply(f.keys, "[[", "ext.keys")))
                     key.prag <- temp.prag[temp.prag$name %in% key.vals,]
                     add.cols <- key.prag$name
                     add.type <- key.prag$type
@@ -94,7 +196,6 @@ test.createTable <- function()
     }
     
     dbDisconnect(db.con)
-    file.remove("temp.db")
 }
 
 test.insertStatement <- function()
@@ -105,7 +206,7 @@ test.insertStatement <- function()
     
     valid.tables <- names(tbsl@tab.list)
     
-    db.con <- dbConnect(SQLite(), "temp.db")
+    db.con <- dbConnect(SQLite(), tempfile())
     
     for(i in valid.tables)
     {
@@ -162,7 +263,6 @@ test.insertStatement <- function()
     }
     
     dbDisconnect(db.con)
-    file.remove("temp.db")
 }
 
 test.mergeStatement <- function()
@@ -256,7 +356,7 @@ test.populate.db.tbl.schema.list <- function()
     
     tbsl <- new("TableSchemaList", tab.list=tab.list)
     
-    db.con <- dbConnect(SQLite(), "temp.db")
+    db.con <- dbConnect(SQLite(), tempfile())
     
     probe.tab.file <- om.tab.file()
     
@@ -277,11 +377,10 @@ test.populate.db.tbl.schema.list <- function()
     checkEquals(test.query, sub.probe.tab)
     
     dbDisconnect(db.con)
-    file.remove("temp.db")
     
     #should be able to easily populate a single table without dependencies
     
-    db.con <- dbConnect(SQLite(), "temp.db")
+    db.con <- dbConnect(SQLite(), tempfile())
     
     populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables="transcript_cluster", should.debug=TRUE)
     
@@ -294,15 +393,13 @@ test.populate.db.tbl.schema.list <- function()
     checkEquals(comp.tab, test.query.2)
     
     dbDisconnect(db.con)
-    file.remove("temp.db")
     
     #should throw an error if attempting to populate a table with dependencies
     
-    db.con <- dbConnect(SQLite(), "temp.db")
+    db.con <- dbConnect(SQLite(), tempfile())
     checkException(populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables="probe", should.debug=TRUE))
     
     dbDisconnect(db.con)
-    file.remove("temp.db")
 }
 
 test.make.vcf.table <- function()
@@ -312,7 +409,7 @@ test.make.vcf.table <- function()
     #ust a relatively strange number < the length of probe.grange
     window.size <- 109
     vcf.name <- om.vcf.file()
-    db.con <- dbConnect(SQLite(), "temp.db")
+    db.con <- dbConnect(SQLite(), tempfile())
     
     lo.probe.dta <- read.delim(om.lo.file(), sep="\t", header=TRUE, stringsAsFactors=FALSE)
     #duplications exist here, so remove them ahead of time
@@ -406,7 +503,6 @@ test.make.vcf.table <- function()
     checkEquals(all.dta, sec.melt.vcf)
     
     dbDisconnect(db.con)
-    file.remove("temp.db")
 }
 
 #need additional test code to ensure that only uniquely mapping probes are assigned to snps etc..

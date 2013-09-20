@@ -45,11 +45,11 @@ filter.sanger.vcf <- function(snp.vcf.list, param.list)
                            {
                                 if (nrow(x$GENO$GT) > 0)
                                 {
-									diff.names <- setdiff(strain.names, colnames(x$GENO$GT))
-									if (length(diff.names) > 0)
-									{
-										stop(paste("ERROR:in strain.names", paste(diff.names, collapse=","), "differs from colnames of GENO$GT"))
-									}
+				    diff.names <- setdiff(strain.names, colnames(x$GENO$GT))
+				    if (length(diff.names) > 0)
+				    {
+					    stop(paste("ERROR:in strain.names", paste(diff.names, collapse=","), "differs from colnames of GENO$GT"))
+				    }
                                     return(apply(x$GENO$GT[,strain.names, drop=FALSE], 1, function(x) any(x != "0/0")))
                                 }
                                 else
