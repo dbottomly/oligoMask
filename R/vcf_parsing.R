@@ -244,7 +244,7 @@ run.analysis.strand <- function(probe.dss, bs.genome, seqnames, strands, max.mis
 #db.name <- "test.db"
 #window.size=1000
 
-create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name="test.db", keep.category="main", window.size=1000, max.mismatch=1, limit.chr=NULL, should.debug=FALSE)
+create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name="test.db", keep.category="main", window.size=1000, max.mismatch=1, limit.chr=NULL, should.debug=FALSE, package.info=NULL)
 {
         if (is.null(vcf.files) == TRUE || is.null(vcf.labels) == TRUE || is.character(vcf.files) == FALSE || is.character(vcf.labels) == FALSE || length(vcf.files) != length(vcf.labels))
         {
@@ -268,31 +268,79 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
         
         if (file.exists(db.name))
         {
-            file.remove(db.name)
+            unlink(db.name, recursive=TRUE)
         }
 		
-		if (missing(limit.chr) || is.null(limit.chr))
-		{
-			limit.chr <- seqnames(bs.genome)
-		}
-		else if (is.character(limit.chr) == TRUE && all(limit.chr %in% seqnames(bs.genome)) == FALSE)
-		{
-			stop("ERROR: If specified as a character, limit.chr needs to be an element of seqnames(bs.genome)")
-		}
-		else if (class(limit.chr) == "GRanges" && (length(limit.chr) != 1 || all(as.character(seqnames(limit.chr)) %in% seqnames(bs.genome)) == FALSE))
-		{
-			stop("ERROR: If specified as a GRanges object, limit.chr needs to be of length 1 and have its seqnames be in seqnames(bs.genome)")
-		}
-		else if (class(limit.chr) %in% c("character", "GRanges") == FALSE)
-		{
-			stop("ERROR: Unexpected class for limit.chr needs to be either character or GRanges or NULL")
-		}
-		
-		if (class(bs.genome) != "BSgenome")
-		{
-			stop("ERROR: bs.genome needs to be of class BSgenome")
-		}
+	 if (missing(limit.chr) || is.null(limit.chr))
+	 {
+		 limit.chr <- seqnames(bs.genome)
+	 }
+	 else if (is.character(limit.chr) == TRUE && all(limit.chr %in% seqnames(bs.genome)) == FALSE)
+	 {
+		 stop("ERROR: If specified as a character, limit.chr needs to be an element of seqnames(bs.genome)")
+	 }
+	 else if (class(limit.chr) == "GRanges" && (length(limit.chr) != 1 || all(as.character(seqnames(limit.chr)) %in% seqnames(bs.genome)) == FALSE))
+	 {
+		 stop("ERROR: If specified as a GRanges object, limit.chr needs to be of length 1 and have its seqnames be in seqnames(bs.genome)")
+	 }
+	 else if (class(limit.chr) %in% c("character", "GRanges") == FALSE)
+	 {
+		 stop("ERROR: Unexpected class for limit.chr needs to be either character or GRanges or NULL")
+	 }
+	 
+	 if (class(bs.genome) != "BSgenome")
+	 {
+		 stop("ERROR: bs.genome needs to be of class BSgenome")
+	 }
         
+	 if (is.null(package.info) == FALSE && class(package.info) == "list" && all(names(package.info) %in% c("AUTHOR", "AUTHOREMAIL", "BOWTIE_PATH", "GENOME_PATH", "VCF_QUERY_CMD", "VCF_TYPE")))
+	 {
+		 # browser()
+		  actual.db.name <- file.path(db.name, "inst", "extdata", "package.db")
+		  actual.tbsl.name <- file.path(db.name, "inst", "extdata", "tbsl.RData")
+		  
+		  package.desc <- packageDescription("oligoMask")
+		  
+		  var.type.str <- paste("list(", paste(paste(vcf.labels, "=", paste0("'", vcf.files, "'")) , collapse=","), ")")
+		  
+		  #for now the chip manufacturer is always Affy, maybe have the ability to change at some point...
+		  
+		  if (class(limit.chr) == "GRanges")
+		  {
+			   use.chr.vec <- unique(as.character(seqnames(limit.chr)))
+		  }
+		  else
+		  {
+			  use.chr.vec <- limit.chr 
+		  }
+		  
+		  syms <- list(VERSION=package.desc$Version, MANUF="Affymetrix", CHIPNAME=gsub("-", "_", strsplit(basename(probe.tab.file), "\\.")[[1]][1]), LIC=package.desc$License, TBSLDATA=basename(actual.tbsl.name), DB_NAME=basename(actual.db.name),
+			  GENOME_PACKAGE=bs.genome@seqs_pkgname, LIMIT_CHR=paste0("c(", paste(paste0("'",use.chr.vec, "'"), collapse=","),")"), VAR_TYPE=var.type.str,
+			  NUM_MISMATCH=as.character(max.mismatch))
+		  
+		  syms <- append(syms, package.info)
+	 
+		  Biobase::createPackage(pkgname=db.name, destinationDir=".", originDir=system.file(file.path("extdata", "oligoMask.template"), package = "oligoMask"), symbolValues=syms, unlink=TRUE)
+		  
+		  #the extdata directory doesn't get transferred over probably as it is empty...
+		  if (file.exists(dirname(actual.tbsl.name))==FALSE)
+		  {
+			   dir.create(dirname(actual.tbsl.name), recursive=TRUE)
+		  }
+		  
+		  save(db.schema, file=actual.tbsl.name)
+		       
+		  db.name <- actual.db.name
+	 }
+	 else if (is.null(package.info) == FALSE && class(package.info) == "list" && all(names(package.info) %in% c("AUTHOR", "AUTHOREMAIL", "BOWTIE_PATH", "GENOME_PATH", "VCF_QUERY_CMD", "VCF_TYPE")) == FALSE)
+	 {
+		  stop("ERROR: if a list is supplied to package.info, it needs to have the 'AUTHOR', 'AUTHOREMAIL', 'BOWTIE_PATH', 'GENOME_PATH', 'VCF_QUERY_CMD' and 'VCF_TYPE' names supplied to it")
+	 }
+	 else if (is.null(package.info) == FALSE && class(package.info) != "list")
+	 {
+		  stop("ERROR: need to either set package.info as NULL or provide a list")
+	 }
+	
         db.con <- dbConnect(SQLite(), db.name)
         
         sanger.vcf.param <- ScanVcfParam(trimEmpty=FALSE, fixed="ALT", geno=c("GT", "FI"), info=NA, strand="*")
@@ -302,15 +350,15 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
         chr.tab <- table(unlist(lapply(vcf.files, function(x) rownames(header(scanVcfHeader(x))[["contig"]]))))
         common.chrs <- names(chr.tab)[chr.tab == length(vcf.files)]
         
-		if (length(common.chrs) == 0)
-		{
-				message("NOTICE: chromosome annotations not found in VCF, using those from the supplied genome")
-				common.chrs <- as.character(seqnames(bs.genome))
-				
-		}else if(seqnameStyle(Seqinfo(seqnames=common.chrs)) != seqnameStyle(bs.genome))
-        {
+	 if (length(common.chrs) == 0)
+	 {
+			 message("NOTICE: chromosome annotations not found in VCF, using those from the supplied genome")
+			 common.chrs <- as.character(seqnames(bs.genome))
+			 
+	 }else if(seqnameStyle(Seqinfo(seqnames=common.chrs)) != seqnameStyle(bs.genome))
+	 {
                 stop("ERROR: Chromosome names are not in the same style")
-        }
+	 }
         
         if (all(names(probe.tab) %in% c("Probe.ID", "Transcript.Cluster.ID", "probe.x", "probe.y", "assembly", "seqname", "start", "stop", "strand", "probe.sequence", "target.strandedness", "category")))
         {
@@ -370,7 +418,7 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
                 stop("ERROR: Unsupported tab file specified")
         }
 		
-		invisible(dbDisconnect(db.con))
+	 invisible(dbDisconnect(db.con))
 }
 
 #now divide the probes into the different alignment categories

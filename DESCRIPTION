@@ -1,5 +1,5 @@
 Package: oligoMask
-Version: 0.99.03
+Version: 0.99.04
 Date: 2013-5-13
 Title: Tools for masking out problematic Affymetrix probes using VCF files and the oligo package
 Author: Daniel Bottomly

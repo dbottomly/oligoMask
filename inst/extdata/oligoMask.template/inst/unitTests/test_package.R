@@ -1,6 +1,16 @@
+library(RSQLite)
+library(@GENOME_PACKAGE@)
+library(Rsamtools)
+library(reshape2)
+
+#simply to trigger the test functions, as the below tests may be only relevant to the SangerTableSchemaList, may need to define other tests as different types of DBs become available.
+alignments <- function(x) x
+sanger.genotypes <- function(x) x
+
+
 test.alignments <- function()
 {
-    db.name="@DB_NAME@"
+    db.name=system.file("extdata", "@DB_NAME@", package="@PKGNAME@")
     limit.chr <- @LIMIT_CHR@
     bs.genome <- @GENOME_PACKAGE@
     
@@ -85,8 +95,8 @@ test.sanger.genotypes <- function()
     
     #in practice, the vcf file and db.name will be placed in the template upon creation..
     
-    vcf.files <- list('SNV'="@SNV_PATH@", 'INDEL'="@INDEL_PATH@")
-    db.name="@DB_NAME@"
+    vcf.files <- @VAR_TYPE@
+    db.name=system.file("extdata", "@DB_NAME@", package="@PKGNAME@")
     
     db.con <- dbConnect(SQLite(), db.name)
     

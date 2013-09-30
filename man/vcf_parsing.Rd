@@ -12,7 +12,7 @@ Functionality to create SQLite databases from several types of VCF including tho
 \usage{
 populate.db.tbl.schema.list(db.con, db.schema, ins.vals, use.tables = NULL, should.debug = FALSE)
 make.vcf.table(db.schema, window.size, vcf.name, db.con, probe.grange, vcf.type="SNV", use.tables=NULL, limit=NULL, should.debug=FALSE, vcf.param=NULL, filter.func=NULL, filter.params=list())
-create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name="test.db", keep.category="main", window.size=1000, max.mismatch=1, limit.chr=NULL, should.debug=FALSE)
+create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name="test.db", keep.category="main", window.size=1000, max.mismatch=1, limit.chr=NULL, should.debug=FALSE, package.info=NULL)
 }
 
 \arguments{
@@ -84,6 +84,12 @@ create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, 
 }
 \item{limit.chr}{
 	A character vector containing the chromosomes to consider or NULL in which case all available chromosomes from the specified genome will be used.
+}
+\item{package.info}{
+	Either NULL or a named list containing the following elements: "AUTHOR", "AUTHOREMAIL", "BOWTIE_PATH", "GENOME_PATH", "VCF_QUERY_CMD", "VCF_TYPE".  If NULL is supplied, a database will
+	be generated at the path specified in db.name.  If the list is provided, a package will be generated containing the database along with other relevant metadata supplemented by the values supplied in
+	package.info.  For this list, AUTHOR and AUTHOREMAIL indicates the author of the package and their email.  BOWTIE_PATH, GENOME_PATH and VCF_QUERY_CMD indicates the path to a bowtie executable, the genome
+	used for creation of the database and the path to a vcf-query tool from vcftools or htslib, these are not necessary unless the package is to be tested afterwards and can be set to an arbitrary string.  They can always be added in later.  VCF_TYPE is simply a desription of the type of VCF database created for instance NODvB6 or CC.
 }
 
 }

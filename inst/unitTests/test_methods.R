@@ -534,14 +534,52 @@ test.create.sanger.mouse.vcf.db <- function()
     if (full.tests == TRUE)
     {
         limit.chr <- "19"
-    }
-    else
+    }else
     {
         limit.chr <- GRanges(seqnames="19", ranges=IRanges(start=min(tab.aln$start), end=max(tab.aln$end)/4), strand="*")
     }
     
-    create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name, keep.category, window.size, max.mismatch, limit.chr, should.debug)
+    #first, creating the database without a package
     
+    create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name, keep.category, window.size, max.mismatch, limit.chr, should.debug, package.info=NULL)
+    
+    examine.vcf.db(db.name, db.schema, tab.aln, vcf.files, strain.names)
+    
+    #then after creating the database with a package
+    
+    db.name <- "test.package"
+    
+    if (file.exists(db.name))
+    {
+        unlink(db.name)
+    }
+    
+    package.info <- list(AUTHOR="test", AUTHOREMAIL="test@test.com", BOWTIE_PATH="/Users/bottomly/Desktop/github_projects/bowtie_build/bowtie",
+                         GENOME_PATH="/Users/bottomly/Desktop/resources/sequences/GRCm38_68", VCF_QUERY_CMD="htscmd vcfquery", VCF_TYPE="CC")
+    
+    create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name, keep.category, window.size, max.mismatch, limit.chr, should.debug, package.info=package.info)
+    
+    examine.vcf.db(file.path(db.name, "inst", "extdata", "package.db"), db.schema, tab.aln, vcf.files, strain.names)
+    
+    #then do an Rcheck to make sure the package builds etc...
+    
+    #only do this test if these files exist, which is only likely to be try on my local machine
+    
+    #bowtie.work <- system(package.info$BOWTIE_PATH) != 127
+    #vcf.query.cmd.work <- system(package.info$VCF_QUERY_CMD) != 127
+    #
+    #if (bowtie.work && file.exists(paste0(package.info$GENOME_PATH, ".1.ebwt")) && vcf.query.cmd.work)
+    #{
+    #    #not running the tests as this is only a partial alignment example and so they will not work...
+    #    did.work <- system(paste("R-3.0.1 CMD check --no-tests",db.name))
+    #    checkTrue(did.work == 0)
+    #}
+    
+    unlink(db.name)
+}
+
+examine.vcf.db <- function(db.name, db.schema, tab.aln, vcf.files, strain.names)
+{
     db.con <- dbConnect(SQLite(), db.name)
     
     checkTrue(length(intersect(names(db.schema@tab.list), dbListTables(db.con))) == length(names(db.schema@tab.list)))
