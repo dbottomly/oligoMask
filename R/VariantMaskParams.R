@@ -120,7 +120,7 @@ get.shortest.query.path <- function(var.mask.par, start=NULL, finish=NULL, rever
 
 #choose the set of probe IDs to remove from consideration
 setGeneric("validProbeQuery", def=function(object,...) standardGeneric("validProbeQuery"))
-setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, target, should.add=TRUE)
+setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, target, should.add=TRUE, should.count=FALSE)
           {
                 oligo.query <- switch(target, core=object@core.query, probeset=object@probeset.query)
                 

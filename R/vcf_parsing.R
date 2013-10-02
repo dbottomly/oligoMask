@@ -17,8 +17,44 @@ setMethod("tbsl", signature("VcfDB"), function(obj)
 
 setMethod("show", signature("VcfDB"), function(object)
         {
-                message("An object of class VcfDB")
+			#a hack for now to determine whether the object is a package
+			split.path <- strsplit(object@db.path, .Platform$file.sep)[[1]]
+			if (split.path[length(split.path)] == "package.db" && split.path[length(split.path)-1] == "extdata")
+			{
+				pack.name <- split.path[length(split.path)-2]
+				pkg.des <- packageDescription(pack.name)
+				message(pkg.des$Description)
+				message(paste("Built on:", gsub(";", "", pkg.des$Built)))
+				message(paste("Package version:", pkg.des$Version))
+			}
+			else
+			{
+				#probably a standalone database
+				message("An object of class VcfDB pointing to a standalone DB")
+			}
+			
+			db.con <- dbConnect(SQLite(), object@db.path)
+			
+			if (isTRUE(all.equal(om.CC.mogene.2.1.st@tbsl, SangerTableSchemaList())))
+			{
+				probe.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_id)) FROM probe_info")[,1]
+				message(paste("Containing alignments for", probe.count, "probes"))
+				
+				var.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(ref_id)) FROM reference")[,1]
+				strain.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(strain)) FROM genotype")[,1]
+				message(paste("Containing", var.count , "variants from", strain.count, "inbred strains"))
+			}
+			else
+			{
+				stop("ERROR: Unknown type of TableSchemaList")
+			}
+			
+			invisible(dbDisconnect(db.con))
         })
+
+#summary method
+#probe.cat.counts <- dbGetQuery(db.con, "SELECT align_status AS Alignment_Status, COUNT(DISTINCT(probe_ind)) AS Count from probe_info GROUP BY align_status")
+#				format(probe.cat.counts)
 
 filter.sanger.vcf <- function(snp.vcf.list, param.list)
 {

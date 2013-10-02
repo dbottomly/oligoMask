@@ -5,8 +5,7 @@ Version: @VERSION@
 Author: @AUTHOR@
 Maintainer: @AUTHOR@ <@AUTHOREMAIL@>
 LazyLoad: yes
-Imports: oligoMask
-Depends: R (>= 3.0.0),methods
+Depends: R (>= 3.0.0),methods,oligoMask
 Suggests: RUnit,BiocGenerics,reshape2,Rsamtools,@GENOME_PACKAGE@
 License: @LIC@
 biocViews: AnnotationData
