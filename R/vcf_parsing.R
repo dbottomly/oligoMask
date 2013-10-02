@@ -35,7 +35,7 @@ setMethod("show", signature("VcfDB"), function(object)
 			
 			db.con <- dbConnect(SQLite(), object@db.path)
 			
-			if (isTRUE(all.equal(om.CC.mogene.2.1.st@tbsl, SangerTableSchemaList())))
+			if (isTRUE(all.equal(object@tbsl, SangerTableSchemaList())))
 			{
 				probe.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_id)) FROM probe_info")[,1]
 				message(paste("Containing alignments for", probe.count, "probes"))
