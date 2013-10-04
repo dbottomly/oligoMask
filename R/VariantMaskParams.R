@@ -217,9 +217,21 @@ tsl.to.graphNEL <- function(tsl)
 {
     edge.l <- lapply(tsl@tab.list, function(x)
            {
-                return(list(edges=names(x$foreign.keys)))
+                cur.edges <- unlist(lapply(x$foreign.keys, "[[", "local.keys"))
+                if (is.null(cur.edges))
+                {
+                    return(list(edges=NULL))
+                }
+                else
+                {
+                    common.col <- intersect(x$db.cols, cur.edges)
+                    use.fk <- sapply(x$foreign.keys, function(x) x$local.keys %in% common.col)
+                    return(list(edges=names(use.fk)[use.fk == TRUE]))
+                }
+                    
+                #the old way...
+                #return(list(edges=names(x$foreign.keys)))
            })
-    
     return(graphNEL(nodes=names(edge.l), edgeL=edge.l, edgemode='directed'))
 }
 

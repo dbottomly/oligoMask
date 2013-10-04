@@ -9,6 +9,29 @@ setMethod("vcfDb", signature("VcfDB"), function(obj)
                 return(obj@db.path)
           })
 
+setGeneric("getProbeVars", def=function(obj, ...) standardGeneric("getProbeVars"))
+setMethod("getProbeVars", signature("VcfDB"), function(obj, probe.ids)
+          {
+			if (is.null(probe.ids) || is.na(probe.ids) || is.character(probe.ids) == FALSE || length(probe.ids) == 0)
+			{
+				stop("ERROR: probe.ids needs to be a non-empty character vector")
+			}
+			
+			db.con <- dbConnect(SQLite(), obj@db.path)
+			
+			query.tables <- get.shortest.query.path(VariantMaskParams(obj), start="probe_info", finish="genotype", reverse=FALSE)
+			
+			vard.probes <- dbGetQuery(db.con, paste("SELECT probe_id, fasta_name, align_status, probe_chr, probe_start, probe_end, seqnames AS var_chr, start AS var_start,
+				end AS var_end, filter, geno_chr, allele_num, strain FROM", paste(query.tables, collapse=" NATURAL JOIN "), "WHERE probe_id IN (", paste(var.probes, collapse=","), ")"))
+			
+			print 
+			
+			dbDisconnect(db.con)
+
+			return(vard.probes)
+			
+          })
+
 setGeneric("tbsl", def=function(obj, ...) standardGeneric("tbsl"))
 setMethod("tbsl", signature("VcfDB"), function(obj)
           {
