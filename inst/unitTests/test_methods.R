@@ -816,4 +816,31 @@ test.maskRMA <- function()
         checkEquals(final.exprs, exprs(applied.mask)[x,])
     }
     
+    #try again using the "before.summary" option in a basic sense
+    
+    applied.mask.2 <- maskRMA(SunGeneFS, background=TRUE, normalize=TRUE, target="core", mask.type="before.summary", apply.mask=TRUE, mask.params=var.mask.par)
+    
+    init.exprs <- exprs(SunGeneFS)
+    
+    init.exprs.bg <- preprocessCore:::rma.background.correct(init.exprs)
+    
+    init.exprs.norm <- preprocessCore:::normalize.quantiles(init.exprs.bg)
+    
+    checkTrue(all(dim(init.exprs.norm) == dim(init.exprs)))
+    
+    rownames(init.exprs.norm) <- rownames(init.exprs)
+    colnames(init.exprs.norm) <- colnames(init.exprs)
+    
+    split.probes.2 <- split(as.data.frame(init.exprs.norm[sub.probe.annot$fid,]), sub.probe.annot$fsetid)
+    
+    #from gene_st_test.R
+    for (x in names(split.probes.2))
+    {
+        temp <- medpolish(log2(as.matrix(split.probes.2[[x]])), trace.iter=FALSE)
+        
+        final.exprs <- temp$overall + temp$col
+        
+        checkEquals(final.exprs, exprs(applied.mask.2)[x,])
+    }
+    
 }

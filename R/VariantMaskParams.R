@@ -256,7 +256,7 @@ check.and.add.tables <- function(table.name, query.tables, object, default.join.
 }
 
 setGeneric("maskRMA", def=function(object, ...) standardGeneric("maskRMA"))
-setMethod("maskRMA", signature("GeneFeatureSet"), function(object, background=TRUE, normalize=TRUE, subset=NULL, target="core", apply.mask=FALSE, mask.params=NULL)
+setMethod("maskRMA", signature("GeneFeatureSet"), function(object, background=TRUE, normalize=TRUE, subset=NULL, target="core", mask.type=c("before.rma", "before.summary"), apply.mask=FALSE, mask.params=NULL)
           {
             if (apply.mask == FALSE)
             {
@@ -274,6 +274,7 @@ setMethod("maskRMA", signature("GeneFeatureSet"), function(object, background=TR
                 }
                 
                 target <- match.arg(target, c("core", "probeset"))
+                mask.type <- match.arg(mask.type)
              
                 #need to get a data.frame with columns fid and fsetid corresponding to the probes and probesets/metaprobesets to be used
                 featureInfo <- getProbeDf(mask.params, object, target)
@@ -284,11 +285,45 @@ setMethod("maskRMA", signature("GeneFeatureSet"), function(object, background=TR
                 
                 if ("matrix" %in% theClass) {
                     
-                    pms <- exprs(object)[pmi, , drop = FALSE]
-                    dimnames(pms) <- NULL
-                    colnames(pms) <- sampleNames(object)
-                    theExprs <- basicRMA(pms, pnVec, normalize, background)
-                    rm(pms)
+                    if (mask.type == "before.rma")
+                    {
+                        pms <- exprs(object)[pmi, , drop = FALSE]
+                        dimnames(pms) <- NULL
+                        colnames(pms) <- sampleNames(object)
+                        theExprs <- basicRMA(pms, pnVec, normalize, background)
+                        rm(pms)
+                    }
+                    else if (mask.type == "before.summary")
+                    {
+                        if (background == TRUE)
+                        {
+                            bg.mat <- backgroundCorrect(exprs(object), method="rma", target=target)
+                        }
+                        else
+                        {
+                            bg.mat <- exprs(object)
+                        }
+                        
+                        if (normalize == TRUE)
+                        {
+                            n.mat <- normalize(bg.mat, method="quantile", target=target)
+                        }
+                        else
+                        {
+                            n.mat <- bg.mat
+                        }
+                        
+                        dimnames(n.mat) <- dimnames(exprs(object))
+                        pms <- n.mat[pmi,,drop=FALSE]
+                        dimnames(pms) <- NULL
+                        colnames(pms) <- sampleNames(object)
+                        theExprs <- summarize(pms, probes=pnVec, method="medianpolish")
+                    }
+                    else
+                    {
+                        stop("ERROR: Unexpected value for mask.type")
+                    }
+                    
                 }
                 else if ("ff_matrix" %in% theClass) {
                    stop("ERROR: oligoMask support for type 'ff_matrix' not currently supported")

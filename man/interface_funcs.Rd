@@ -9,7 +9,7 @@ Provides the main functionality behing oligoMask.  These functions/methods allow
 }
 
 \usage{
-	\S4method{maskRMA}{GeneFeatureSet}(object, background=TRUE, normalize=TRUE, subset=NULL, target="core", apply.mask=FALSE, mask.params=NULL)
+	\S4method{maskRMA}{GeneFeatureSet}(object, background=TRUE, normalize=TRUE, subset=NULL, target="core", mask.type=c("before.rma", "before.summary"), apply.mask=FALSE, mask.params=NULL)
 	}
 
 \arguments{
@@ -21,6 +21,7 @@ Provides the main functionality behing oligoMask.  These functions/methods allow
   \item{target}{Type of summarization to be performed (e.g. 'core' or 'probeset')}
   \item{apply.mask}{Boolean indicating whether the variant mask should be applied}
   \item{mask.params}{An object of class \code{VariantMaskParams}}
+  \item{mask.type}{Either 'before.rma' or 'before.summary' where 'before.rma' carries out the masking before the RMA processing occurs while 'before.summary' performs masking after the background correction and normalization but before the summarization step via median polish.}
 }
 
 \section{Methods}{
