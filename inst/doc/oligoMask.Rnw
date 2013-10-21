@@ -145,7 +145,7 @@ To explore this further, we carry out the same analysis, except perform a maskin
 
 <<>>=
 
-library(om.NOD.mogene.1.0.st)s
+library(om.NOD.mogene.1.0.st)
 
 var.parms <- VariantMaskParams(om.NOD.mogene.1.0.st, geno.filter=FALSE, rm.unmap=FALSE,
 	rm.mult=FALSE)
@@ -216,7 +216,7 @@ Though currently we only have support for Affymetrix Gene arrays, additional Aff
 Alberts, Rudi, et al. "Sequence polymorphisms cause many false cis eQTLs." PloS one 2.7 (2007): e622.
 
 
-Benovoy, David, Tony Kwan, and Jacek Majewski. "Effect of polymorphisms within probeÐtarget sequences on olignonucleotide microarray experiments." Nucleic acids research 36.13 (2008): 4417-4423.
+Benovoy, David, et al. "Effect of polymorphisms within probeÐtarget sequences on olignonucleotide microarray experiments." Nucleic acids research 36.13 (2008): 4417-4423.
 
 
 Chia, Ruth, et al. "The origins and uses of mouse outbred stocks." Nature genetics 37.11 (2005): 1181-1186.

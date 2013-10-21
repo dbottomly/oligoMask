@@ -1,8 +1,16 @@
+import(methods)
+import(DBI)
+import(RSQLite)
+importClassesFrom(oligoClasses, FeatureSet, GeneFeatureSet)
+importMethodsFrom(oligoClasses, db)
+importMethodsFrom(Biobase, exprs, sampleNames, phenoData,protocolData)
+importMethodsFrom(oligo, rma)
+
+importFrom(Biobase, assayDataNew)
+importFrom(oligo, basicRMA)
+
 importClassesFrom(VariantAnnotation, ScanVcfParam)
 importFrom(VariantAnnotation, scanVcf, ScanVcfParam, scanVcfHeader, header, vcfWhich, 'vcfWhich<-')
-#importClassesFrom(oligoClasses, FeatureSet, GeneFeatureSet, ExonFeatureSet, DBPDInfo, AffyGenePDInfo)
-#importFrom(oligoClasses, db, kind)
-#importFrom(oligo, rma, basicRMA, exprs)
 importFrom(reshape2, melt)
 importClassesFrom(Biostrings, PDict, DNAStringSet, MIndex)
 importFrom(Biostrings, matchPDict, reverseComplement, unlist)
@@ -11,12 +19,6 @@ importClassesFrom(GenomicRanges, GRanges)
 importFrom(GenomicRanges, as.data.frame)
 
 importClassesFrom(Biobase, NChannelSet, eSet, VersionedBiobase, Versioned)
-
-#switched DBI and RSQLite to Depends in order to get the AffyGenePDInfo class to be
-#initialized...
-#importMethodsFrom(DBI, dbCommit, dbConnect, dbDisconnect, dbGetQuery, dbExistsTable)
-#importFrom(RSQLite, SQLite, sqliteQuickSQL)
-#importMethodsFrom(RSQLite, dbGetPreparedQuery, dbBeginTransaction)
 
 importClassesFrom(graph, graphNEL)
 importFrom(graph, graphNEL, ugraph)

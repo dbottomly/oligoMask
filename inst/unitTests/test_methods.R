@@ -5,6 +5,7 @@ stopifnot(require(RSQLite))
 stopifnot(require(BSgenome.Mmusculus.UCSC.mm9))
 stopifnot(require(VariantAnnotation))
 stopifnot(require(reshape2))
+stopifnot(require(oligo))
 
 data("SunGeneFS")
 

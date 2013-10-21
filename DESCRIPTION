@@ -1,12 +1,12 @@
 Package: oligoMask
-Version: 0.99.07
+Version: 0.99.08
 Date: 2013-5-13
 Title: Tools for masking out problematic Affymetrix probes using VCF files and the oligo package
 Author: Daniel Bottomly
 Maintainer: Daniel Bottomly <bottomly@ohsu.edu>
-Imports: Biobase,methods,VariantAnnotation,GenomicRanges,batch,reshape2,graph,RBGL,oligo,oligoClasses,BSgenome,Biostrings,seqnames.db 
-Depends: R (>= 3.0.0), DBI,RSQLite,oligo,oligoClasses
-Suggests: RUnit, BiocGenerics, pd.mogene.1.0.st.v1, BSgenome.Mmusculus.UCSC.mm9
+Imports: Biobase,VariantAnnotation,GenomicRanges,reshape2,graph,RBGL,BSgenome,Biostrings,oligo,oligoClasses
+Depends: R (>= 3.0.0), methods,DBI,RSQLite
+Suggests: RUnit, BiocGenerics, pd.mogene.1.0.st.v1, BSgenome.Mmusculus.UCSC.mm9,limma,om.NOD.mogene.1.0.st
 Description: It has been established that the presence of single nucleotide variants in transcript regions that are interograted by microarray probes can cause spurious decreases in signal.  In the case of Affymetrix arrays, more than one probe is present in a given probeset/transcript-cluster and this provides the opportunity to remove probes that could potentially be affected prior to background correction, normalization and summarization as in the RMA method. This package is intended to provide the user a convient interface between several packages to faciliate analysis of Affymetrix arrays especially the Gene and Exon varieties. Although, originally designed for the analysis of expression data from mouse recombinant inbred intercrosses use with human expression arrays is also possible.
 License: GPL-3
 biocViews: DataImport
