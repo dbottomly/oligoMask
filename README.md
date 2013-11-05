@@ -21,7 +21,7 @@ The package can also be installed manually by first clicking 'Download ZIP' and 
 'oligoMask-master.zip' file into a convenient directory.  From within R in the same directory as 
 'oligoMask-master' type:
 
-install.packages("plethy-master", repos=NULL, type="source")
+install.packages("oligoMask-master", repos=NULL, type="source")
 
 or for instance using the `devtools` package:
 
