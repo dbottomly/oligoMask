@@ -14,10 +14,24 @@ interface between several packages to facilitate analysis of Affymetrix arrays e
 Gene and Exon varieties. Although, originally designed for the analysis of expression data 
 from mouse recombinant inbred inter-crosses use with human expression arrays is also possible.
 
+Installation
+----------
+
+The package can also be installed manually by first clicking 'Download ZIP' and unzipping the resulting 
+'oligoMask-master.zip' file into a convenient directory.  From within R in the same directory as 
+'oligoMask-master' type:
+
+install.packages("plethy-master", repos=NULL, type="source")
+
+or for instance using the `devtools` package:
+
+install_github(username="dbottomly", repo="oligoMask", ref="master")
+
 How to contribute
 ---------
 
-Please send me an email if you are interested in contributing.
+Contributions are encouraged through the standard fork/pull procedures.  Feel free to send me an email with any 
+questions.
 
 Contact
 ---------
