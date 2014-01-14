@@ -11,15 +11,6 @@
 
 \maketitle
 
-\section{Introduction}
-
-It has been observed that for RNA from a given sample, genetic differences relative to the probe sequences can affect hybridization to short oligonucleotide probes resulting in false positives or negatives depending on the experimental and array design (Walter et al. 2007; Alberts et al. 2007).
-Although R packages exist to effectively deal with a two group comparison between several strains or species through procedures based mainly on the expression data (for instance maskBAD and SNEP), it is also useful to have methods to allow the a priori removal of probes which are likely to be
-affected by hybridization issues (Benovoy et al. 2008).  Removing such variants ahead of time is useful when analyzing more complicated experimental designs such as those found in eQTL analyses using more genetically diverse mouse lines such as Diversity Outbred (Svenson et al. 2012),
-Collaborative Cross (Collaborative Cross Consortium 2012) or other Heterogenous Stock (Chia et al. 2005) mice.  In these crosses, a set of inbred strains were used as the founders and the resulting genomes for mapping would consist of a mixture of the original founder genomes and therefore
-without additional genotyping it would not be known whether a given animal possesses a given variant.  The simplest approach to variant masking in this context is to remove probes which overlap variants in any of the non-reference mouse strains prior to summarization or analysis.
-The key to this is the relatively recent availability of genome-wide variant databases in VCF format such as those from the Sanger Mouse Genomes Project (http://www.sanger.ac.uk/resources/mouse/genomes/) and the 1000 Genomes for humans (http://www.1000genomes.org/).     
-
 \section{The oligoMask package}
 
 The \texttt{oligoMask} package is designed to work in conjunction with the \texttt{oligo} package to facilitate removal of aberrant probe expression prior to RMA procedure for Affymetrix arrays.
@@ -28,6 +19,7 @@ This database can be optionally wrapped in an R package with appropriate metadat
 to enable creation of an oligoMask database using VCF files from the Sanger Mouse Genomes Project and the tab-delimited probe sequence files distributed by Affymetrix as well as standard Bioconductor functionality.
 As a demonstration, we will utilize a portion of the array data of (Sun et al. 2012) and a variant mask generated for the NOD/ShiLtJ mouse inbred strain from the Sanger Mouse Genomes Project. 
 
+\section{Data preparation}
 
 The expression data can be retrieved from GEO using the accession number: GSE33822.  Retrieval from R can easily be carried out using the \texttt{GEOquery} package.  As our interest was in the CEL files we first downloaded them and then
 kept only the 8 arrays which corresponded to wholebrain with the vehicle treatment that were run on version 1 of the Mouse Gene ST array.
@@ -57,6 +49,40 @@ dbDisconnect(meta.con)
 
 sun.gene.fs <- read.celfiles(filenames=annot$clean.cel.path,  sampleNames=annot$sample_name,
 	pkgname="pd.mogene.1.0.st.v1")
+
+save(sun.gene.fs, file="SunGeneFS.RData")
+
+@
+
+<<eval=FALSE, echo=FALSE>>=
+##adapted from Biobase::makeDataPackage
+##don't really need to use this over and over again so won't make a derived method
+##for now...
+require(Biobase)
+
+load("SunGeneFS.RData")
+
+sym = list(AUTHOR = "Daniel Bottomly", VERSION = "0.99.0", 
+            LICENSE = "GPL-3", TITLE = "Experimental Data Package for oligoMask",
+	    MAINTAINER = "Daniel Bottomly <bottomly@ohsu.edu>", BVIEWS ="ExperimentData", FORMAT="",
+	    DESCRIPTION="Package containing data from Sun et al 2012 as described in the vignette")
+res = createPackage("oligoMaskData", destinationDir = ".", 
+            originDir = system.file("ExpressionSet", package = "Biobase"), 
+            symbolValues = sym, unlink = TRUE)
+	    
+datadir = file.path(res$pkgdir, "data")
+
+dir.create(datadir, showWarnings = FALSE)
+
+outfile = file.path(datadir, "oligoMaskData.RData")
+
+oligoMaskData <- sun.gene.fs
+
+save(oligoMaskData, file = outfile)
+
+#then was built as:
+
+#R CMD build --resave-data oligoMaskData
 
 @
 
@@ -106,77 +132,87 @@ install.packages("om.NOD.mogene.1.0.st", repos=NULL, type="source")
 
 @
 
+\section{Expression Analysis}
+
 Analysis of our subset of the Sun et al data can be carried out at the metaprobeset (core) level using both \texttt{oligo} and the \texttt{limma} packages.  Here we simply find the strain differences for the vehicle class of exposure and examine
-closer those strain differences where NOD has lower expression than B6.
-
-<<eval=TRUE, echo=FALSE>>=
-
-load("/Users/bottomly/Desktop/github_projects/oligoMask_vignette/SunGeneFS.RData")
-
-@
+closer those strain differences where NOD has lower expression than B6.  Note that the \texttt{SunGeneFS.RData} file from above has been saved in the \texttt{oligoMaskData} package and can be utilized as below.  First we carry out the analysis of
+the masked data.
 
 <<>>=
 
-library(limma)
-library(oligo)
+library(oligoMask)
+library(oligoMaskData)
+library(om.NOD.mogene.1.0.st)
 library(pd.mogene.1.0.st.v1)
+library(limma)
+data(oligoMaskData)
+ 
+var.parms <- VariantMaskParams(om.NOD.mogene.1.0.st, geno.filter=FALSE, rm.unmap=FALSE, 
+ 	rm.mult=FALSE)
+ 
+sun.gfs.mask <- maskRMA(oligoMaskData, target="core", apply.mask=TRUE, 
+ 	mask.params=var.parms)
 
-sum.gfs <- rma(sun.gene.fs, target="core")
+sun.exprs.mask <- exprs(sun.gfs.mask)
 
-sum.exprs <- exprs(sum.gfs)
-
-phen.dta <- data.frame(t(sapply(strsplit(colnames(sum.exprs), "_"), c))[,1:3])
+phen.dta <- data.frame(t(sapply(strsplit(colnames(sun.exprs.mask), "_"), c))[,1:3])
 names(phen.dta) <- c("tissue", "strain", "exposure")
 
 use.mod <- model.matrix(~strain, data=phen.dta)
-
-fit <- lmFit(sum.exprs, use.mod)
+fit <- lmFit(sun.exprs.mask, use.mod)
 fit <- eBayes(fit)
 
-test.res <- decideTests(fit)
+sun.exprs.mask.res <- decideTests(fit)
 
-sum(abs(test.res[,"strainNOD"]) == 1)
-sum(test.res[,"strainNOD"] == 1)
-sum(test.res[,"strainNOD"] == -1)
+summary(sun.exprs.mask.res)
 
 @
 
-To explore this further, we carry out the same analysis, except perform a masking procedure prior to the RMA preprocessing step.
+Next we carry out the same analysis, except perform a masking procedure prior to the RMA preprocessing step.
 
 <<>>=
 
-library(om.NOD.mogene.1.0.st)
+sun.gfs.unmask <- maskRMA(oligoMaskData, target="core", apply.mask=FALSE, 
+ 	mask.params=var.parms)
+        
+sun.exprs.unmask <- exprs(sun.gfs.unmask)
 
-var.parms <- VariantMaskParams(om.NOD.mogene.1.0.st, geno.filter=FALSE, rm.unmap=FALSE,
-	rm.mult=FALSE)
+um.phen.dta <- data.frame(t(sapply(strsplit(colnames(sun.exprs.unmask), "_"), c))[,1:3])
+names(um.phen.dta) <- c("tissue", "strain", "exposure")
 
-sum.gfs.mask <- maskRMA(sun.gene.fs, target="core", apply.mask=TRUE, mask.params=var.parms)
+um.mod <- model.matrix(~strain, data=um.phen.dta)
+um.fit <- lmFit(sun.exprs.unmask, um.mod)
+um.fit <- eBayes(um.fit)
 
-sum.exprs.mask <- exprs(sum.gfs.mask)
+sun.exprs.unmask.res <- decideTests(um.fit)
 
-stopifnot(all(colnames(sum.exprs.mask) == colnames(sum.exprs)))
-#can use the same model matrix from before
-
-fit.mask <- lmFit(sum.exprs.mask, use.mod)
-fit.mask <- eBayes(fit.mask)
-
-test.res.mask <- decideTests(fit.mask)
-
-sum(test.res.mask[,"strainNOD"] == -1)
-sum(test.res.mask[,"strainNOD"] == 1)
+summary(sun.exprs.unmask.res)
 
 @
+
+We can then compare the two results using a venn diagram.
+
+<<>>=
+
+comb.mat <- cbind(sun.exprs.unmask.res[,"strainNOD", drop=FALSE], Masked=0)
+comb.mat[rownames(sun.exprs.mask.res),"Masked"] <- sun.exprs.mask.res[,"strainNOD"]
+colnames(comb.mat)[1] <- "UnMasked"
+    
+vennDiagram(vennCounts(comb.mat))
+
+@
+
 
 We next can explore further into why there are differences between the metaprobesets.  First we determine which metaprobesets were lost from the masking procedure.  That is, in this case, which ones had all probes impacted by a variant.  Of those
-we can then determine which of those were significant in the original tests.
+we can then determine which of those were significant in the original (unmasked) tests.
 
 <<>>=
 
-lost.mps <- setdiff(rownames(test.res), rownames(test.res.mask))
+lost.mps <- setdiff(rownames(sun.exprs.unmask.res), rownames(sun.exprs.mask.res))
 
 lost.mps
 
-sig.lost.mps <- intersect(rownames(test.res)[test.res[,"strainNOD"] == -1], lost.mps)
+sig.lost.mps <- intersect(rownames(sun.exprs.unmask.res)[sun.exprs.unmask.res[,"strainNOD"] == -1], lost.mps)
 
 sig.lost.mps
 
@@ -188,7 +224,7 @@ can then be filtered to remove all reference genotypes (\texttt{allele\_num = 0}
 
 <<>>=
 
-mps.dta <- getProbeInfo(sum.gfs, probeType="pm", target="core")
+mps.dta <- getProbeInfo(oligoMaskData, probeType="pm", target="core")
 
 var.mps <- mps.dta[mps.dta$man_fsetid %in% sig.lost.mps,]
 
@@ -213,25 +249,8 @@ Though currently we only have support for Affymetrix Gene arrays, additional Aff
 
 \section{References}
 
-Alberts, Rudi, et al. "Sequence polymorphisms cause many false cis eQTLs." PloS one 2.7 (2007): e622.
-
-
-Benovoy, David, et al. "Effect of polymorphisms within probeÐtarget sequences on olignonucleotide microarray experiments." Nucleic acids research 36.13 (2008): 4417-4423.
-
-
-Chia, Ruth, et al. "The origins and uses of mouse outbred stocks." Nature genetics 37.11 (2005): 1181-1186.
-
-
-Collaborative Cross Consortium. "The genome architecture of the Collaborative Cross mouse genetic reference population." Genetics 190 (2012): 389-401.
-
-
 Sun, Wei, et al. "Transcriptome atlases of mouse brain reveals differential expression across brain regions and genetic backgrounds." G3: Genes| Genomes| Genetics 2.2 (2012): 203-211.
 
-
-Svenson, Karen L., et al. "High-resolution genetic mapping using the mouse diversity outbred population." Genetics 190.2 (2012): 437-447.
-
-
-Walter, Nicole AR, et al. "SNPs matter: impact on detection of differential expression." Nature methods 4.9 (2007): 679-680.
 
 <<eval=TRUE>>=
 sessionInfo()
