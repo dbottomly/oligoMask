@@ -17,6 +17,8 @@ from mouse recombinant inbred inter-crosses use with human expression arrays is 
 Installation
 ----------
 
+The simplest approach to installing the package is to download and install the files in the latest release either using R CMD INSTALL package\_name.tar.gz or via install.packages("package\_name.tar.gz", repos=NULL, type="source") from an R session.
+
 The package can also be installed manually by first clicking 'Download ZIP' and unzipping the resulting 
 'oligoMask-master.zip' file into a convenient directory.  From within R in the same directory as 
 'oligoMask-master' type:
