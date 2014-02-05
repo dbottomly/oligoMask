@@ -55,6 +55,7 @@ save(sun.gene.fs, file="SunGeneFS.RData")
 @
 
 <<eval=FALSE, echo=FALSE>>=
+####How oligoMaskData was built###
 ##adapted from Biobase::makeDataPackage
 ##don't really need to use this over and over again so won't make a derived method
 ##for now...
@@ -192,16 +193,19 @@ summary(sun.exprs.unmask.res)
 
 We can then compare the two results using a venn diagram.
 
-<<>>=
+\begin{center}
+
+<<fig=TRUE, echo=TRUE>>=
 
 comb.mat <- cbind(sun.exprs.unmask.res[,"strainNOD", drop=FALSE], Masked=0)
 comb.mat[rownames(sun.exprs.mask.res),"Masked"] <- sun.exprs.mask.res[,"strainNOD"]
 colnames(comb.mat)[1] <- "UnMasked"
-    
+
 vennDiagram(vennCounts(comb.mat))
 
 @
 
+\end{center}
 
 We next can explore further into why there are differences between the metaprobesets.  First we determine which metaprobesets were lost from the masking procedure.  That is, in this case, which ones had all probes impacted by a variant.  Of those
 we can then determine which of those were significant in the original (unmasked) tests.
