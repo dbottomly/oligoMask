@@ -374,7 +374,7 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
 		  }
 		  
 		  syms <- list(VERSION=package.desc$Version, MANUF="Affymetrix", CHIPNAME=gsub("-", "_", strsplit(basename(probe.tab.file), "\\.")[[1]][1]), LIC=package.desc$License, TBSLDATA=basename(actual.tbsl.name), DB_NAME=basename(actual.db.name),
-			  GENOME_PACKAGE=bs.genome@seqs_pkgname, LIMIT_CHR=paste0("c(", paste(paste0("'",use.chr.vec, "'"), collapse=","),")"), VAR_TYPE=var.type.str,
+			  GENOME_PACKAGE=bs.genome@pkgname, LIMIT_CHR=paste0("c(", paste(paste0("'",use.chr.vec, "'"), collapse=","),")"), VAR_TYPE=var.type.str,
 			  NUM_MISMATCH=as.character(max.mismatch))
 		  
 		  syms <- append(syms, package.info)

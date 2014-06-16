@@ -1,25 +1,40 @@
-guess.core.query <- function()
-{
-    guess.query.func(oligo:::getFidMetaProbesetCore)
-}
+#guess.core.query <- function()
+#{
+#    guess.query.func(oligo:::getFidMetaProbesetCore)
+#}
+#
+#guess.probeset.query <- function()
+#{
+#    guess.query.func(oligo:::getFidProbeset)
+#}
 
-guess.probeset.query <- function()
+guess.query.func <- function(object, target)
 {
-    guess.query.func(oligo:::getFidProbeset)
-}
-
-guess.query.func <- function(defined.function)
-{
-    core.func <- deparse(defined.function)
-    core.query <- core.func[grep("SELECT", core.func)]
-    if (length(core.query) != 1)
+    if (target == "core")
     {
-        stop("ERROR: Guess at query failed, please supply valid SQL queries to the VariantMaskParams object")
+        use.func <- oligo:::getFidMetaProbesetCore
+    }else
+    {
+        use.func <- oligo:::getFidProbeset
     }
     
-    temp <- eval(parse(text=core.query))
+    func.list <- as.list(body(use.func))
     
-    return(temp)
+    which.sql <- sapply(func.list, function(x) any(grep("SELECT", x)))
+    
+    if (sum(which.sql) != 1)
+    {
+        stop("ERROR: Guess at query failed--multiple possible queries found")
+    }
+    
+    sql.val <- eval(func.list[which.sql][[1]])
+    
+    if (is.character(sql.val) == F || length(sql.val) != 1)
+    {
+        stop("ERROR: Guess at query failed--only one SQL query expected")
+    }
+    
+    return(sql.val)
 }
 
 valid.VariantMaskParams <- function(object)
@@ -53,9 +68,9 @@ valid.VariantMaskParams <- function(object)
     return(TRUE)
 }
 
-setClass(Class="VariantMaskParams", representation=list(mask.type="character", geno.filter="logical", rm.unmap="logical", rm.mult="logical", core.query="character",
-                                                        probeset.query="character", oligo.probe.id="character", var.db="VcfDB"),
-                                    prototype=prototype(mask.type="static", geno.filter=FALSE, rm.unmap=TRUE, rm.mult=TRUE, core.query=guess.core.query(), probeset.query=guess.probeset.query(), oligo.probe.id ="fid", var.db=new("VcfDB")),
+setClass(Class="VariantMaskParams", representation=list(mask.type="character", geno.filter="logical", rm.unmap="logical", rm.mult="logical", 
+                                                        oligo.probe.id="character", var.db="VcfDB"),
+                                    prototype=prototype(mask.type="static", geno.filter=FALSE, rm.unmap=TRUE, rm.mult=TRUE, oligo.probe.id ="fid", var.db=new("VcfDB")),
                                     validity=valid.VariantMaskParams)
 
 setMethod("show", signature("VariantMaskParams"), function(object)
@@ -122,7 +137,7 @@ get.shortest.query.path <- function(var.mask.par, start=NULL, finish=NULL, rever
 setGeneric("validProbeQuery", def=function(object,...) standardGeneric("validProbeQuery"))
 setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, target, should.add=TRUE, should.count=FALSE)
           {
-                oligo.query <- switch(target, core=object@core.query, probeset=object@probeset.query)
+                oligo.query <- guess.query.func(object, target)
                 
                 var.presence <- "contains_var"
                 filter.presence <- "passes_filter"
