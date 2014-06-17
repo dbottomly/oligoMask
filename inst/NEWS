@@ -1,3 +1,7 @@
+VERSION 0.99.09
+
+Removed the probeset.query and core.query slots in the VariantMaskParams object, the proper SQL query is now inferred using the supplied FeatureSet object.
+
 VERSION 0.99.02
 
 Bux fixes for the methods of TableSchemaList as well as the SangerTableSchemaList to deal with INDELS that have the same exact position as SNVs.

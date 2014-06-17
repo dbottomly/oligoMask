@@ -403,6 +403,8 @@ test.populate.db.tbl.schema.list <- function()
     dbDisconnect(db.con)
 }
 
+###still need to fix me:  attributes are not identical across measure variables; they will be dropped
+
 test.make.vcf.table <- function()
 {
     
@@ -452,7 +454,8 @@ test.make.vcf.table <- function()
     
     filt.vcf.dta <- do.call("rbind", lapply(filt.vcf, function(x)
            {
-                temp.dta <- cbind(as.data.frame(x$rowData), ref=as.character(x$REF), alt=sapply(x$ALT, paste, collapse=","), gt=x$GENO$GT, fi=x$GENO$FI)
+                temp.dta <- cbind(as.data.frame(x$rowData), ref=as.character(x$REF), alt=sapply(x$ALT, paste, collapse=","), gt=x$GENO$GT, fi=x$GENO$FI,
+                                  stringsAsFactors=F)
            }))
     
     #the same variant can impact several probes, so remove the duplicates as the conversion to the database should do so
@@ -593,7 +596,7 @@ examine.vcf.db <- function(db.name, db.schema, tab.aln, vcf.files, strain.names)
     
     checkTrue(nrow(probe.aln) == nrow(sub.tab.aln))
     
-    merged.annot <- merge(probe.aln, sub.tab.aln, by.x="probe_id", by.y="Probe.ID", all=TRUE, incomparables=NA, sort=FALSE)
+    merged.annot <- merge(probe.aln, sub.tab.aln, by.x="probe_id", by.y="Probe.ID", all=TRUE, sort=FALSE)
     
     checkTrue(nrow(merged.annot) == nrow(probe.aln))
     
@@ -622,7 +625,7 @@ examine.vcf.db <- function(db.name, db.schema, tab.aln, vcf.files, strain.names)
     var.ovls <- dbGetQuery(db.con, "SELECT * FROM probe_to_snp NATURAL JOIN reference NATURAL JOIN probe_align NATURAL JOIN probe_info")
     
     #there will be some of these which are not variants in one of the 8 strains, check that here...
-    temp <- merge(probe.snp, var.ovls, all=TRUE, incomparables=NA, sort=FALSE)
+    temp <- merge(probe.snp, var.ovls, all=TRUE,  sort=FALSE)
     
     checkTrue(nrow(temp) == nrow(probe.snp))
     checkTrue(sum(is.na(temp)) == 0)
