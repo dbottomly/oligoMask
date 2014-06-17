@@ -24,9 +24,7 @@ VariantMaskParams constructor function as VariantMaskParams(var.db, geno.filter=
     \item{\code{geno.filter}:}{Object of class \code{"logical"} indicating whether only the probes overlapping the high quality genotypes be used (default is FALSE)}
     \item{\code{rm.unmap}:}{Object of class \code{"logical"} indicating whether the probes that are unmapped should be removed as well (default is TRUE)}
     \item{\code{rm.mult}:}{Object of class \code{"logical"} indicating whether the probes that map to multiple locations should be removed as well (default is TRUE)}
-    \item{\code{core.query}:}{Object of class \code{"character"} representing a query from the oligo package to retrieve the probes associated with the core metaprobesets (attempts to find this automatically)}
-    \item{\code{probeset.query}:}{Object of class \code{"character"} representing a query from the oligo package to retrieve the probes associated with the probesets (attempts to find this automatically)}
-    \item{\code{oligo.probe.id}:}{Object of class \code{"character"} indicating the database column that the oligo package uses to denote the probe ID}
+     \item{\code{oligo.probe.id}:}{Object of class \code{"character"} indicating the database column that the oligo package uses to denote the probe ID}
   \item{\code{var.db}:}{Object of class \code{"VcfDB"} corresponding to the VCF database to be used for masking}
   }
 }
