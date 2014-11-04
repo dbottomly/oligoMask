@@ -1,4 +1,4 @@
-The `oligoMask` package
+The `oligoMask` package [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.12571.png)](http://dx.doi.org/10.5281/zenodo.12571)
 =========
 
 The `oligoMask` package provides tools for masking out problematic Affymetrix probes 
