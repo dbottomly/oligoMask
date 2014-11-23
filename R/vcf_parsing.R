@@ -1,151 +1,4 @@
-#TODO: if no strains/sample names are specified, parse based on the REF and ALT and maybe another field that would indicate populations
-
-setClass(Class="VcfDB", representation=list(db.path="character", tbsl="TableSchemaList", start.var.table="character", end.var.table="character", var.mask.probe.id="character", var.mask.var.id="character"),
-         prototype=prototype(start.var.table="reference", end.var.table="probe_info", var.mask.probe.id="probe_id", var.mask.var.id="ref_id"))
-
-setGeneric("vcfDb", def=function(obj, ...) standardGeneric("vcfDb"))
-setMethod("vcfDb", signature("VcfDB"), function(obj)
-          {
-                return(obj@db.path)
-          })
-
-setGeneric("getProbeVars", def=function(obj, ...) standardGeneric("getProbeVars"))
-setMethod("getProbeVars", signature("VcfDB"), function(obj, probe.ids)
-          {
-			if (is.null(probe.ids) || is.na(probe.ids) || is.character(probe.ids) == FALSE || length(probe.ids) == 0)
-			{
-				stop("ERROR: probe.ids needs to be a non-empty character vector")
-			}
-			
-			db.con <- dbConnect(SQLite(), obj@db.path)
-			
-			query.tables <- get.shortest.query.path(VariantMaskParams(obj), start="probe_info", finish="genotype", reverse=FALSE)
-			
-			vard.probes <- dbGetQuery(db.con, paste("SELECT probe_id, fasta_name, align_status, probe_chr, probe_start, probe_end, seqnames AS var_chr, start AS var_start,
-				end AS var_end, filter, geno_chr, allele_num, strain FROM", paste(query.tables, collapse=" NATURAL JOIN "), "WHERE probe_id IN (", paste(var.probes, collapse=","), ")"))
-			
-			print 
-			
-			dbDisconnect(db.con)
-
-			return(vard.probes)
-			
-          })
-
-setGeneric("tbsl", def=function(obj, ...) standardGeneric("tbsl"))
-setMethod("tbsl", signature("VcfDB"), function(obj)
-          {
-                return(obj@tbsl)
-          })
-
-setMethod("show", signature("VcfDB"), function(object)
-        {
-			#a hack for now to determine whether the object is a package
-			split.path <- strsplit(object@db.path, .Platform$file.sep)[[1]]
-			if (split.path[length(split.path)] == "package.db" && split.path[length(split.path)-1] == "extdata")
-			{
-				pack.name <- split.path[length(split.path)-2]
-				pkg.des <- packageDescription(pack.name)
-				message(pkg.des$Description)
-				message(paste("Built on:", gsub(";", "", pkg.des$Built)))
-				message(paste("Package version:", pkg.des$Version))
-			}
-			else
-			{
-				#probably a standalone database
-				message("An object of class VcfDB pointing to a standalone DB")
-			}
-			
-			db.con <- dbConnect(SQLite(), object@db.path)
-			
-			if (isTRUE(all.equal(object@tbsl, SangerTableSchemaList())))
-			{
-				probe.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_id)) FROM probe_info")[,1]
-				message(paste("Containing alignments for", probe.count, "probes"))
-				
-				var.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(ref_id)) FROM reference")[,1]
-				strain.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(strain)) FROM genotype")[,1]
-				message(paste("Containing", var.count , "variants from", strain.count, "inbred strains"))
-			}
-			else
-			{
-				stop("ERROR: Unknown type of TableSchemaList")
-			}
-			
-			invisible(dbDisconnect(db.con))
-        })
-
-#summary method
-#probe.cat.counts <- dbGetQuery(db.con, "SELECT align_status AS Alignment_Status, COUNT(DISTINCT(probe_ind)) AS Count from probe_info GROUP BY align_status")
-#				format(probe.cat.counts)
-
-filter.sanger.vcf <- function(snp.vcf.list, param.list)
-{
-	if (class(snp.vcf.list) != "list")
-	{
-		stop("ERROR: snp.vcf.list needs to be a list object")
-	}
-	if ("strain.names" %in% names(param.list) == FALSE)
-	{
-		stop("ERROR: filter function filter.sanger.vcf needs param.list to have a named element 'strain.names'")
-	}
-	
-    strain.names <- param.list$strain.names
-    
-	if (is.character(strain.names) == FALSE || length(strain.names) == 0)
-	{
-		stop("ERROR: strain.names needs to be a character vector with at least one element")
-	}
-	
-	#also need to check whether all strain.names are in the GENO$GT matrix
-	
-	#iterate over the list and only keep those elements which have variants for one of the seven strain
-    keep.snps.list <- lapply(snp.vcf.list, function(x)
-                           {
-                                if (nrow(x$GENO$GT) > 0)
-                                {
-				    diff.names <- setdiff(strain.names, colnames(x$GENO$GT))
-				    if (length(diff.names) > 0)
-				    {
-					    stop(paste("ERROR:in strain.names", paste(diff.names, collapse=","), "differs from colnames of GENO$GT"))
-				    }
-                                    return(apply(x$GENO$GT[,strain.names, drop=FALSE], 1, function(x) any(x != "0/0")))
-                                }
-                                else
-                                {
-                                    return(FALSE)
-                                }
-                           })
-    
-    #first filter for those with at least one variant
-
-    keep.records <- sapply(keep.snps.list, any)
-    
-    snp.vcf.list <- snp.vcf.list[keep.records]
-    keep.snps.list <- keep.snps.list[keep.records]
-    
-    #next remove entries within a record that do not contain variants in one of the strains
-    
-    stopifnot(all(names(snp.vcf.list) == names(keep.snps.list)))
-    
-    sub.snp.vcf.list <- lapply(names(snp.vcf.list), function(x)
-                           {
-                                keep.elems <- keep.snps.list[[x]]
-                                
-                                #added due to issue concerning duplicate names for indels
-                                temp.snp.vcf <- snp.vcf.list[[x]]
-                                names(temp.snp.vcf$rowData) <- NULL
-                                
-                                return(with(temp.snp.vcf, list(rowData=rowData[keep.elems,], REF=REF[keep.elems,], ALT=ALT[keep.elems],
-                                                                    GENO=list(GT=GENO$GT[keep.elems,strain.names, drop=FALSE], FI=GENO$FI[keep.elems,strain.names, drop=FALSE]))))
-                           })
-	
-	names(sub.snp.vcf.list) <- names(snp.vcf.list)
-    
-    return(sub.snp.vcf.list)
-    
-}
-
+###should be replaced with populate from poplite..
 populate.db.tbl.schema.list <- function(db.con, db.schema, ins.vals=NULL, use.tables=NULL, should.debug=FALSE)
 {
 	if (class(db.con) != "SQLiteConnection")
@@ -225,6 +78,75 @@ populate.db.tbl.schema.list <- function(db.con, db.schema, ins.vals=NULL, use.ta
         }
         
     }
+}
+
+
+
+filter.sanger.vcf <- function(snp.vcf.list, param.list)
+{
+	if (class(snp.vcf.list) != "list")
+	{
+		stop("ERROR: snp.vcf.list needs to be a list object")
+	}
+	if ("strain.names" %in% names(param.list) == FALSE)
+	{
+		stop("ERROR: filter function filter.sanger.vcf needs param.list to have a named element 'strain.names'")
+	}
+	
+    strain.names <- param.list$strain.names
+    
+	if (is.character(strain.names) == FALSE || length(strain.names) == 0)
+	{
+		stop("ERROR: strain.names needs to be a character vector with at least one element")
+	}
+	
+	#also need to check whether all strain.names are in the GENO$GT matrix
+	
+	#iterate over the list and only keep those elements which have variants for one of the seven strain
+    keep.snps.list <- lapply(snp.vcf.list, function(x)
+                           {
+                                if (nrow(x$GENO$GT) > 0)
+                                {
+				    diff.names <- setdiff(strain.names, colnames(x$GENO$GT))
+				    if (length(diff.names) > 0)
+				    {
+					    stop(paste("ERROR:in strain.names", paste(diff.names, collapse=","), "differs from colnames of GENO$GT"))
+				    }
+                                    return(apply(x$GENO$GT[,strain.names, drop=FALSE], 1, function(x) any(x != "0/0")))
+                                }
+                                else
+                                {
+                                    return(FALSE)
+                                }
+                           })
+    
+    #first filter for those with at least one variant
+
+    keep.records <- sapply(keep.snps.list, any)
+    
+    snp.vcf.list <- snp.vcf.list[keep.records]
+    keep.snps.list <- keep.snps.list[keep.records]
+    
+    #next remove entries within a record that do not contain variants in one of the strains
+    
+    stopifnot(all(names(snp.vcf.list) == names(keep.snps.list)))
+    
+    sub.snp.vcf.list <- lapply(names(snp.vcf.list), function(x)
+                           {
+                                keep.elems <- keep.snps.list[[x]]
+                                
+                                #added due to issue concerning duplicate names for indels
+                                temp.snp.vcf <- snp.vcf.list[[x]]
+                                names(temp.snp.vcf$rowData) <- NULL
+                                
+                                return(with(temp.snp.vcf, list(rowData=rowData[keep.elems,], REF=REF[keep.elems,], ALT=ALT[keep.elems],
+                                                                    GENO=list(GT=GENO$GT[keep.elems,strain.names, drop=FALSE], FI=GENO$FI[keep.elems,strain.names, drop=FALSE]))))
+                           })
+	
+	names(sub.snp.vcf.list) <- names(snp.vcf.list)
+    
+    return(sub.snp.vcf.list)
+    
 }
 
 #based off of the 'GenomeSearching vignette in BSgenome'

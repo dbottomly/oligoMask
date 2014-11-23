@@ -81,7 +81,7 @@ setMethod("show", signature("VariantMaskParams"), function(object)
 setGeneric("maskDb", def=function(obj, ...) standardGeneric("maskDb"))
 setMethod("maskDb", signature("VariantMaskParams"), function(obj)
           {
-                return(obj@var.db@db.path)
+                return(dbFile(obj@var.db))
           })
 
 VariantMaskParams <- function(var.db, geno.filter=FALSE, rm.unmap=TRUE, rm.mult=TRUE, mask.type="static")
@@ -94,44 +94,45 @@ VariantMaskParams <- function(var.db, geno.filter=FALSE, rm.unmap=TRUE, rm.mult=
     return(new("VariantMaskParams", var.db=var.db, geno.filter=geno.filter, rm.unmap=rm.unmap, rm.mult=rm.mult, mask.type=mask.type))
 }
 
-get.shortest.query.path <- function(var.mask.par, start=NULL, finish=NULL, reverse=TRUE, undirected=TRUE)
-{
-    if (class(var.mask.par) != "VariantMaskParams")
-    {
-        stop("ERROR: var.mask.par needs to be of class VariantMaskParams")
-    }
-    
-    if (missing(start) || is.null(start) || is.na(start))
-    {
-        start <- var.mask.par@var.db@start.var.table
-    }
-    
-    if (missing(finish) || is.null(finish) || is.na(finish))
-    {
-        finish <- var.mask.par@var.db@end.var.table
-    }
-    
-    tsl.graph <- tsl.to.graphNEL(var.mask.par@var.db@tbsl)
-    
-    if (undirected)
-    {
-        tsl.graph <- ugraph(tsl.graph)
-    }
-    
-    table.path <- sp.between(g=tsl.graph,start=start,finish=finish, detail=TRUE)
-    
-    #do it backwards as that is how we want to merge it with the pd tables
-    if (reverse==TRUE)
-    {
-        mask.query <- table.path[[1]]$path_detail[length(table.path[[1]]$path_detail):1]
-    }
-    else
-    {
-        mask.query <- table.path[[1]]$path_detail
-    }
-    
-    return(mask.query)
-}
+#should be replaced with poplite functionality...
+#get.shortest.query.path <- function(var.mask.par, start=NULL, finish=NULL, reverse=TRUE, undirected=TRUE)
+#{
+#    if (class(var.mask.par) != "VariantMaskParams")
+#    {
+#        stop("ERROR: var.mask.par needs to be of class VariantMaskParams")
+#    }
+#    
+#    if (missing(start) || is.null(start) || is.na(start))
+#    {
+#        start <- var.mask.par@var.db@start.var.table
+#    }
+#    
+#    if (missing(finish) || is.null(finish) || is.na(finish))
+#    {
+#        finish <- var.mask.par@var.db@end.var.table
+#    }
+#    
+#    tsl.graph <- tsl.to.graphNEL(var.mask.par@var.db@tbsl)
+#    
+#    if (undirected)
+#    {
+#        tsl.graph <- ugraph(tsl.graph)
+#    }
+#    
+#    table.path <- sp.between(g=tsl.graph,start=start,finish=finish, detail=TRUE)
+#    
+#    #do it backwards as that is how we want to merge it with the pd tables
+#    if (reverse==TRUE)
+#    {
+#        mask.query <- table.path[[1]]$path_detail[length(table.path[[1]]$path_detail):1]
+#    }
+#    else
+#    {
+#        mask.query <- table.path[[1]]$path_detail
+#    }
+#    
+#    return(mask.query)
+#}
 
 #choose the set of probe IDs to remove from consideration
 setGeneric("validProbeQuery", def=function(object,...) standardGeneric("validProbeQuery"))
@@ -147,13 +148,13 @@ setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, ta
                 
                 query.tables <- get.shortest.query.path(object)
                 
-                query.vec <- check.and.add.tables(table.name=searchTables(object@var.db@tbsl), query.tables=query.tables, object=object, default.join.type="NATURAL LEFT OUTER JOIN")
+                query.vec <- check.and.add.tables(table.name=searchTables(object@var.db), query.tables=query.tables, object=object, default.join.type="NATURAL LEFT OUTER JOIN")
                 
                 #as there is always the possibility of multi variants per probe, the query will always have to aggregate to the probe level
                 
                 inner.query <- paste("(SELECT",object@var.db@var.mask.probe.id,", COUNT(",object@var.db@var.mask.var.id ,") > 0 AS",var.presence ,
-                                  ", SUM(IFNULL(", searchCols(object@var.db@tbsl, "genotype.filter"),dict.to.where(object, dict.name="genotype.filter", values="TRUE"), ",0)) > 0 AS", filter.presence, ",",
-                                  searchCols(obj=object@var.db@tbsl, name="mapping.status"), "FROM", names(query.vec)[1], paste(paste(query.vec[2:length(query.vec)], names(query.vec)[2:length(query.vec)]), collapse=" "), "GROUP BY", object@var.db@var.mask.probe.id, ")")
+                                  ", SUM(IFNULL(", searchCols(object@var.db, "genotype.filter"),dict.to.where(object, dict.name="genotype.filter", values="TRUE"), ",0)) > 0 AS", filter.presence, ",",
+                                  searchCols(obj=object@var.db, name="mapping.status"), "FROM", names(query.vec)[1], paste(paste(query.vec[2:length(query.vec)], names(query.vec)[2:length(query.vec)]), collapse=" "), "GROUP BY", object@var.db@var.mask.probe.id, ")")
                 
                 #either way remove those that are uniquely mapping and that have a variant overlapping them
                 outer.query <- paste("SELECT", object@var.db@var.mask.probe.id, "FROM", inner.query)
@@ -162,11 +163,11 @@ setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, ta
                 {
                     #filter the result to only those with a filter value of TRUE, for this a NATURAL JOIN would suffice as we are filtering down
                     
-                   where.base <- paste("WHERE (", var.presence, "= 1 AND", filter.presence, "= 1 AND", searchCols(obj=object@var.db@tbsl, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
+                   where.base <- paste("WHERE (", var.presence, "= 1 AND", filter.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
                 }
                 else
                 {
-                    where.base <- paste("WHERE (", var.presence, "= 1 AND", searchCols(obj=object@var.db@tbsl, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
+                    where.base <- paste("WHERE (", var.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
                 }
                 
                 outer.query <- paste(outer.query, where.base)
@@ -190,7 +191,7 @@ setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, ta
                         stop("ERROR: rm.unmap and rm.mult should not be false here")
                     }
                     
-                    outer.query <- paste(outer.query, "OR (", searchCols(obj=object@var.db@tbsl, name="mapping.status"), where.suff, ")")
+                    outer.query <- paste(outer.query, "OR (", searchCols(obj=object@var.db, name="mapping.status"), where.suff, ")")
                 }
                 
                 #if none are to be removed then don't add to the query 
@@ -209,7 +210,7 @@ setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, ta
 
 dict.to.where <- function(object, dict.name, values)
 {
-    search.vals <- searchDict(obj=object@var.db@tbsl, name=dict.name, value=values)
+    search.vals <- searchDict(obj=object@var.db, name=dict.name, value=values)
     where.vals <- ifelse(sapply(search.vals, is.character), paste0("'", search.vals, "'"), search.vals)
     
     if (length(where.vals) > 1)
@@ -228,28 +229,29 @@ dict.to.where <- function(object, dict.name, values)
     return(where.suff)
 }
 
-tsl.to.graphNEL <- function(tsl)
-{
-    edge.l <- lapply(tsl@tab.list, function(x)
-           {
-                cur.edges <- unlist(lapply(x$foreign.keys, "[[", "local.keys"))
-                if (is.null(cur.edges))
-                {
-                    return(list(edges=NULL))
-                }
-                else
-                {
-                    common.col <- intersect(x$db.cols, cur.edges)
-                    use.fk <- sapply(x$foreign.keys, function(x) x$local.keys %in% common.col)
-                    return(list(edges=names(use.fk)[use.fk == TRUE]))
-                }
-                    
-                #the old way...
-                #return(list(edges=names(x$foreign.keys)))
-           })
-    return(graphNEL(nodes=names(edge.l), edgeL=edge.l, edgemode='directed'))
-}
+#tsl.to.graphNEL <- function(tsl)
+#{
+#    edge.l <- lapply(tsl@tab.list, function(x)
+#           {
+#                cur.edges <- unlist(lapply(x$foreign.keys, "[[", "local.keys"))
+#                if (is.null(cur.edges))
+#                {
+#                    return(list(edges=NULL))
+#                }
+#                else
+#                {
+#                    common.col <- intersect(x$db.cols, cur.edges)
+#                    use.fk <- sapply(x$foreign.keys, function(x) x$local.keys %in% common.col)
+#                    return(list(edges=names(use.fk)[use.fk == TRUE]))
+#                }
+#                    
+#                #the old way...
+#                #return(list(edges=names(x$foreign.keys)))
+#           })
+#    return(graphNEL(nodes=names(edge.l), edgeL=edge.l, edgemode='directed'))
+#}
 
+#not sure about this function, may no longer be necessary depending on poplite....
 check.and.add.tables <- function(table.name, query.tables, object, default.join.type="NATURAL JOIN")
 {
     diff.tabs <- setdiff(table.name, query.tables)
@@ -374,7 +376,7 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
                 }
                 
                 #attach the snp mask database to the pd database and retrieve a data.frame of the form found in the rma method below
-                dbGetQuery(db(gene.fs), paste0("ATTACH DATABASE '",vcfDb(object@var.db),"' AS var_mask"))
+                dbGetQuery(db(gene.fs), paste0("ATTACH DATABASE '",dbFile(object@var.db),"' AS var_mask"))
                 
                 fs.dta <- dbGetQuery(db(gene.fs), validProbeQuery(object, target))
                 

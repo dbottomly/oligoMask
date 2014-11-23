@@ -1,65 +1,66 @@
 ###taken from the PD package definitions to support the test data
 
-globals <- new.env(hash=TRUE, parent=emptyenv())
-globals$DEBUG <- FALSE
-
-globals$DB_PATH <- system.file("extdata", "mogene_1_0_probe_chr19.db",
-                               package="oligoMask")
-if (nchar(globals$DB_PATH) == 0)
-  stop("Unable to locate DB file")
-
-initDbConnection <- function() {
-    globals$dbCon <- dbConnect(SQLite(), dbname=globals$DB_PATH)
-    globals$dbCon
-}
-
-getDb  <- function() {
-    if (!is.null(globals$dbCon) && isIdCurrent(globals$dbCon))
-      return(globals$dbCon)
-    initDbConnection()
-}
-
-closeDb <- function() {
-    ## FIXME: check for valid connection?
-    if (isIdCurrent(globals$dbCon)){
-        sapply(dbListResults(globals$dbCon), dbClearResult)
-        dbDisconnect(globals$dbCon)
-    }
-    remove(list="dbCon", envir=globals)
-}
-
-.onAttach <- function(libname, pkgname) {
-    globals$DB_PATH <- system.file("extdata", "mogene_1_0_probe_chr19.db",
-                                   package="oligoMask",
-                                   lib.loc=libname)
-    if (nchar(globals$DB_PATH) == 0)
-      stop("Unable to locate DB file")
-    ## Establish a connection to the SQLite DB
-    initDbConnection()
-}
-
-.onUnload <- function(libpath) {
-    closeDb()
-}
-
-test.pd.1.0.st.v1 <- new("AffyGenePDInfo",
-                    genomebuild="mm09",
-                    getdb=getDb,
-                    geometry=as.integer(strsplit("1050;1050", ";")[[1]]),
-                    annotation="test.pd.1.0.st.v1")
-
-setClass("GeneFeatureSetTest", contains=c("FeatureSet", "GeneFeatureSet"))
-
-setMethod("show", "GeneFeatureSetTest", function(object){
-    print("This is test data")
-})
+##need to uncomment me when refactoring is done...
+#globals <- new.env(hash=TRUE, parent=emptyenv())
+#globals$DEBUG <- FALSE
+#
+#globals$DB_PATH <- system.file("extdata", "mogene_1_0_probe_chr19.db",
+#                               package="oligoMask")
+#if (nchar(globals$DB_PATH) == 0)
+#  stop("Unable to locate DB file")
+#
+#initDbConnection <- function() {
+#    globals$dbCon <- dbConnect(SQLite(), dbname=globals$DB_PATH)
+#    globals$dbCon
+#}
+#
+#getDb  <- function() {
+#    if (!is.null(globals$dbCon) && isIdCurrent(globals$dbCon))
+#      return(globals$dbCon)
+#    initDbConnection()
+#}
+#
+#closeDb <- function() {
+#    ## FIXME: check for valid connection?
+#    if (isIdCurrent(globals$dbCon)){
+#        sapply(dbListResults(globals$dbCon), dbClearResult)
+#        dbDisconnect(globals$dbCon)
+#    }
+#    remove(list="dbCon", envir=globals)
+#}
+#
+#.onAttach <- function(libname, pkgname) {
+#    globals$DB_PATH <- system.file("extdata", "mogene_1_0_probe_chr19.db",
+#                                   package="oligoMask",
+#                                   lib.loc=libname)
+#    if (nchar(globals$DB_PATH) == 0)
+#      stop("Unable to locate DB file")
+#    ## Establish a connection to the SQLite DB
+#    initDbConnection()
+#}
+#
+#.onUnload <- function(libpath) {
+#    closeDb()
+#}
+#
+#test.pd.1.0.st.v1 <- new("AffyGenePDInfo",
+#                    genomebuild="mm09",
+#                    getdb=getDb,
+#                    geometry=as.integer(strsplit("1050;1050", ";")[[1]]),
+#                    annotation="test.pd.1.0.st.v1")
+#
+#setClass("GeneFeatureSetTest", contains=c("FeatureSet", "GeneFeatureSet"))
+#
+#setMethod("show", "GeneFeatureSetTest", function(object){
+#    print("This is test data")
+#})
 
 ##end taken code
 
-om.vcf.file <- function() system.file(file.path("extdata", "chr19_snvs_sort.vcf.gz"),package="oligoMask") 
-om.tab.file <- function() system.file(file.path("extdata", "mogene_1_0_probe_chr19.tab.gz"), package="oligoMask")
-om.db.file <- function() system.file(file.path("extdata", "NOD_B6_m37_chr19.db"), package="oligoMask")
-om.lo.file <- function() system.file(file.path("extdata", "mogene_1_0_probe_chr19.tab.liftover.txt.gz"), package="oligoMask")
+#om.vcf.file <- function() system.file(file.path("extdata", "chr19_snvs_sort.vcf.gz"),package="oligoMask") 
+#om.tab.file <- function() system.file(file.path("extdata", "mogene_1_0_probe_chr19.tab.gz"), package="oligoMask")
+#om.db.file <- function() system.file(file.path("extdata", "NOD_B6_m37_chr19.db"), package="oligoMask")
+#om.lo.file <- function() system.file(file.path("extdata", "mogene_1_0_probe_chr19.tab.liftover.txt.gz"), package="oligoMask")
 
 make.ref.dta <- function(vcf.list)
 {
