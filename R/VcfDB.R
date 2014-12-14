@@ -48,7 +48,6 @@ setMethod("searchDict", signature("VcfDB"), function(obj, name, value=NULL)
 #                return(obj@db.file)
 #          })
 
-#working on me....
 setGeneric("getProbeVars", def=function(obj, ...) standardGeneric("getProbeVars"))
 setMethod("getProbeVars", signature("VcfDB"), function(obj, probe.ids)
           {
@@ -56,20 +55,13 @@ setMethod("getProbeVars", signature("VcfDB"), function(obj, probe.ids)
 			{
 				stop("ERROR: probe.ids needs to be a non-empty character vector")
 			}
-                        
-			#db.con <- dbConnect(SQLite(), obj@db.path)
-			#
-			#query.tables <- get.shortest.query.path(VariantMaskParams(obj), start="probe_info", finish="genotype", reverse=FALSE)
-			#
-			#vard.probes <- dbGetQuery(db.con, paste("SELECT probe_id, fasta_name, align_status, probe_chr, probe_start, probe_end, seqnames AS var_chr, start AS var_start,
-			#	end AS var_end, filter, geno_chr, allele_num, strain FROM", paste(query.tables, collapse=" NATURAL JOIN "), "WHERE probe_id IN (", paste(var.probes, collapse=","), ")"))
-			#
-			#dbDisconnect(db.con)
-
-			#return(vard.probes)
 			
-			return(NULL)
+			temp.probes <- select(test.db, probe_id, fasta_name, align_status, probe_chr, probe_start, probe_end, seqnames, start,
+						end, filter, geno_chr, genotype.allele_num, strain)
 			
+			filt.probes <- filter(temp.probes, probe_id %in% probe.id)
+			
+			return(filt.probes)
           })
 
 ###replace with schema...

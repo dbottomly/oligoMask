@@ -146,9 +146,11 @@ setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, ta
                 #build a query in the snp mask by chasing down the foreign keys in a naive way starting at the specified starting table
                 #this first creates a directed graph representation and chases down the dependencies using the adjacent nodes
                 
-                query.tables <- get.shortest.query.path(object)
+                #query.tables <- get.shortest.query.path(object)
                 
-                query.vec <- check.and.add.tables(table.name=searchTables(object@var.db), query.tables=query.tables, object=object, default.join.type="NATURAL LEFT OUTER JOIN")
+                #query.vec <- check.and.add.tables(table.name=searchTables(object@var.db), query.tables=query.tables, object=object, default.join.type="NATURAL LEFT OUTER JOIN")
+                
+                poplite:::join()
                 
                 #as there is always the possibility of multi variants per probe, the query will always have to aggregate to the probe level
                 

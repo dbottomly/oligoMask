@@ -4,6 +4,8 @@
 ###8-23-2013 added vcf_annot_id to reference as the reference should be unique with respect to the variant type...
 ###maybe add a unit test to ensure that variants from seperate vcf_annots are treated seperately...
 
+#Added below relationship on 12-14-2014
+#relationship(om.schema.obj, from="allele", to="genotype") <- ref_id+allele_num~ref_id+allele_num
 
 sanger.tab.list <- function()
 {
@@ -28,7 +30,8 @@ sanger.tab.list <- function()
                             db.schema=c("INTEGER PRIMARY KEY AUTOINCREMENT", "TEXT", "INTEGER", "INTEGER"),
                             db.constr="CONSTRAINT alelle_idx UNIQUE (alleles, allele_num, ref_id)",
                             dta.func=make.allele.dta, should.ignore=TRUE, foreign.keys=list(vcf_annot=list(local.keys="vcf_annot_id", ext.keys=c("vcf_name", "type")),
-                                                                                            reference=list(local.keys="ref_id", ext.keys=c("seqnames", "start", "end", "vcf_annot_id")))),
+                                                                                            reference=list(local.keys="ref_id", ext.keys=c("seqnames", "start", "end", "vcf_annot_id")),
+                                                                                            genotype=list(local.keys=c("ref_id", "allele_num"), ext.keys=c("ref_id", "allele_num")))),
                 genotype=list(db.cols=c("geno_id", "geno_chr", "allele_num","strain", "ref_id"),
                               db.schema=c("INTEGER PRIMARY KEY AUTOINCREMENT", "INTEGER", "INTEGER", "TEXT", "INTEGER"),
                               db.constr="CONSTRAINT geno_idx UNIQUE (ref_id, strain, geno_chr, allele_num)",
