@@ -134,94 +134,96 @@ VariantMaskParams <- function(var.db, geno.filter=FALSE, rm.unmap=TRUE, rm.mult=
 #    return(mask.query)
 #}
 
+
+
 #choose the set of probe IDs to remove from consideration
-setGeneric("validProbeQuery", def=function(object,...) standardGeneric("validProbeQuery"))
-setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, target, should.add=TRUE, should.count=FALSE)
-          {
-                oligo.query <- guess.query.func(object, target)
-                
-                var.presence <- "contains_var"
-                filter.presence <- "passes_filter"
-                
-                #build a query in the snp mask by chasing down the foreign keys in a naive way starting at the specified starting table
-                #this first creates a directed graph representation and chases down the dependencies using the adjacent nodes
-                
-                #query.tables <- get.shortest.query.path(object)
-                
-                #query.vec <- check.and.add.tables(table.name=searchTables(object@var.db), query.tables=query.tables, object=object, default.join.type="NATURAL LEFT OUTER JOIN")
-                
-                poplite:::join()
-                
-                #as there is always the possibility of multi variants per probe, the query will always have to aggregate to the probe level
-                
-                inner.query <- paste("(SELECT",object@var.db@var.mask.probe.id,", COUNT(",object@var.db@var.mask.var.id ,") > 0 AS",var.presence ,
-                                  ", SUM(IFNULL(", searchCols(object@var.db, "genotype.filter"),dict.to.where(object, dict.name="genotype.filter", values="TRUE"), ",0)) > 0 AS", filter.presence, ",",
-                                  searchCols(obj=object@var.db, name="mapping.status"), "FROM", names(query.vec)[1], paste(paste(query.vec[2:length(query.vec)], names(query.vec)[2:length(query.vec)]), collapse=" "), "GROUP BY", object@var.db@var.mask.probe.id, ")")
-                
-                #either way remove those that are uniquely mapping and that have a variant overlapping them
-                outer.query <- paste("SELECT", object@var.db@var.mask.probe.id, "FROM", inner.query)
-                
-                if (object@geno.filter == TRUE)
-                {
-                    #filter the result to only those with a filter value of TRUE, for this a NATURAL JOIN would suffice as we are filtering down
-                    
-                   where.base <- paste("WHERE (", var.presence, "= 1 AND", filter.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
-                }
-                else
-                {
-                    where.base <- paste("WHERE (", var.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
-                }
-                
-                outer.query <- paste(outer.query, where.base)
-                
-                if ((object@rm.unmap == TRUE || object@rm.mult == TRUE))
-                {
-                    if ((object@rm.unmap == TRUE && object@rm.mult == TRUE))
-                    {
-                        where.suff <- dict.to.where(object, "mapping.status", c("multi", "non"))
-                    }
-                    else if (object@rm.unmap == FALSE && object@rm.mult == TRUE)
-                    {
-                        where.suff <- dict.to.where(object, "mapping.status", "multi")
-                    }
-                    else if (object@rm.unmap == TRUE && object@rm.mult == FALSE)
-                    {
-                        where.suff <- dict.to.where(object, "mapping.status", "non")
-                    }
-                    else
-                    {
-                        stop("ERROR: rm.unmap and rm.mult should not be false here")
-                    }
-                    
-                    outer.query <- paste(outer.query, "OR (", searchCols(obj=object@var.db, name="mapping.status"), where.suff, ")")
-                }
-                
-                #if none are to be removed then don't add to the query 
-                
-                if (should.add == TRUE)
-                {
-                    ex.query <- paste(oligo.query, "JOIN (", outer.query, ") ON", object@oligo.probe.id, "=", object@var.db@var.mask.probe.id)
-                    
-                    return(paste(oligo.query, "EXCEPT", ex.query))
-                }
-                else
-                {
-                    return(outer.query)
-                }
-          })
+#setGeneric("validProbeQuery", def=function(object,...) standardGeneric("validProbeQuery"))
+#setMethod("validProbeQuery", signature("VariantMaskParams"), function(object, target, should.add=TRUE, should.count=FALSE)
+#          {
+#                oligo.query <- guess.query.func(object, target)
+#                
+#                var.presence <- "contains_var"
+#                filter.presence <- "passes_filter"
+#                
+#                #build a query in the snp mask by chasing down the foreign keys in a naive way starting at the specified starting table
+#                #this first creates a directed graph representation and chases down the dependencies using the adjacent nodes
+#                
+#                #query.tables <- get.shortest.query.path(object)
+#                
+#                #query.vec <- check.and.add.tables(table.name=searchTables(object@var.db), query.tables=query.tables, object=object, default.join.type="NATURAL LEFT OUTER JOIN")
+#                
+#                #poplite:::join()
+#                
+#                #as there is always the possibility of multi variants per probe, the query will always have to aggregate to the probe level
+#                
+#                inner.query <- paste("(SELECT",object@var.db@var.mask.probe.id,", COUNT(",object@var.db@var.mask.var.id ,") > 0 AS",var.presence ,
+#                                  ", SUM(IFNULL(", searchCols(object@var.db, "genotype.filter"),dict.to.where(object, dict.name="genotype.filter", values="TRUE"), ",0)) > 0 AS", filter.presence, ",",
+#                                  searchCols(obj=object@var.db, name="mapping.status"), "FROM", names(query.vec)[1], paste(paste(query.vec[2:length(query.vec)], names(query.vec)[2:length(query.vec)]), collapse=" "), "GROUP BY", object@var.db@var.mask.probe.id, ")")
+#                
+#                #either way remove those that are uniquely mapping and that have a variant overlapping them
+#                outer.query <- paste("SELECT", object@var.db@var.mask.probe.id, "FROM", inner.query)
+#                
+#                if (object@geno.filter == TRUE)
+#                {
+#                    #filter the result to only those with a filter value of TRUE, for this a NATURAL JOIN would suffice as we are filtering down
+#                    
+#                   where.base <- paste("WHERE (", var.presence, "= 1 AND", filter.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
+#                }
+#                else
+#                {
+#                    where.base <- paste("WHERE (", var.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
+#                }
+#                
+#                outer.query <- paste(outer.query, where.base)
+#                
+#                if ((object@rm.unmap == TRUE || object@rm.mult == TRUE))
+#                {
+#                    if ((object@rm.unmap == TRUE && object@rm.mult == TRUE))
+#                    {
+#                        where.suff <- dict.to.where(object, "mapping.status", c("multi", "non"))
+#                    }
+#                    else if (object@rm.unmap == FALSE && object@rm.mult == TRUE)
+#                    {
+#                        where.suff <- dict.to.where(object, "mapping.status", "multi")
+#                    }
+#                    else if (object@rm.unmap == TRUE && object@rm.mult == FALSE)
+#                    {
+#                        where.suff <- dict.to.where(object, "mapping.status", "non")
+#                    }
+#                    else
+#                    {
+#                        stop("ERROR: rm.unmap and rm.mult should not be false here")
+#                    }
+#                    
+#                    outer.query <- paste(outer.query, "OR (", searchCols(obj=object@var.db, name="mapping.status"), where.suff, ")")
+#                }
+#                
+#                #if none are to be removed then don't add to the query 
+#                
+#                if (should.add == TRUE)
+#                {
+#                    ex.query <- paste(oligo.query, "JOIN (", outer.query, ") ON", object@oligo.probe.id, "=", object@var.db@var.mask.probe.id)
+#                    
+#                    return(paste(oligo.query, "EXCEPT", ex.query))
+#                }
+#                else
+#                {
+#                    return(outer.query)
+#                }
+#          })
 
 dict.to.where <- function(object, dict.name, values)
 {
-    search.vals <- searchDict(obj=object@var.db, name=dict.name, value=values)
+    search.vals <- searchDict(obj=object, name=dict.name, value=values)
     where.vals <- ifelse(sapply(search.vals, is.character), paste0("'", search.vals, "'"), search.vals)
     
     if (length(where.vals) > 1)
     {
-        where.suff <- paste0("IN ", "(",paste(where.vals, collapse=",") , ")")
+        where.suff <- paste0("%in% ", "c(",paste(where.vals, collapse=",") , ")")
     }
     else if (length(where.vals) == 1)
     {
-        where.suff <- paste0("= ", where.vals)
+        where.suff <- paste0("== ", where.vals)
     }
     else
     {
@@ -363,31 +365,110 @@ setMethod("maskRMA", signature("GeneFeatureSet"), function(object, background=TR
           })
 
 setGeneric("getProbeDf", def=function(object, ...) standardGeneric("getProbeDf"))
-setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs, target, sortBy="fsetid")
-          {
-                #check to see if the database already looks attached...
-                
-                all.tabs.pres <- sapply(names(object@var.db@tbsl@tab.list), function(x)
-                       {
-                            return(dbExistsTable(db(gene.fs), x))
-                       })    
-            
-                if (all(all.tabs.pres))
-                {
-                    dbGetQuery(db(gene.fs), paste0("DETACH DATABASE 'var_mask'"))
-                }
-                
-                #attach the snp mask database to the pd database and retrieve a data.frame of the form found in the rma method below
-                dbGetQuery(db(gene.fs), paste0("ATTACH DATABASE '",dbFile(object@var.db),"' AS var_mask"))
-                
-                fs.dta <- dbGetQuery(db(gene.fs), validProbeQuery(object, target))
-                
-                if (!is.null(sortBy)) {
-                fs.dta <- fs.dta[order(fs.dta[,sortBy]),]
-                rownames(fs.dta) <- NULL
-                }
-                
-                dbGetQuery(db(gene.fs), paste0("DETACH DATABASE 'var_mask'"))
-                
-                return(fs.dta)
-          })
+setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs, target, sortBy="fsetid"){
+    
+    oligo.query <- guess.query.func(object, target)
+    var.presence <- "contains_var"
+    filter.presence <- "passes_filter"
+    
+    #get the probesets from oligoMask
+    
+    #get data corresponding to the requested columns
+    
+    #something like below, though needs to be the select_ method as these will be character values (need to apply the fix to poplite)
+    all.db <- select(test.db, probe_id, align_status, reference.ref_id, filter)
+    
+    geno.counts <- paste("n(", object@var.mask.var.id,") > 0")
+
+    geno.filt <- paste("sum(IFNULL(",searchCols(object, "genotype.filter"),dict.to.where(object, dict.name="genotype.filter", values="TRUE"), ",0)) > 0")
+    
+    #searchCols(obj=object, name="mapping.status")
+    #"align_status"
+    
+    temp <- group_by_(all.db, test.db@var.mask.probe.id)
+    
+    temp.sum <- summarize_(temp, searchCols(obj=object, name="mapping.status"), .dots=setNames(list(geno.counts, geno.filt), c(var.presence, filter.presence)))
+    
+    #then add in the actual filters as below:
+    
+    if (object@geno.filter == TRUE)
+    {
+#       #filter the result to only those with a filter value of TRUE, for this a NATURAL JOIN would suffice as we are filtering down
+#                    
+#                   where.base <- paste("WHERE (", var.presence, "= 1 AND", filter.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
+    }
+#                else
+#                {
+#                    where.base <- paste("WHERE (", var.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
+#                }
+#                
+#                outer.query <- paste(outer.query, where.base)
+#                
+#                if ((object@rm.unmap == TRUE || object@rm.mult == TRUE))
+#                {
+#                    if ((object@rm.unmap == TRUE && object@rm.mult == TRUE))
+#                    {
+#                        where.suff <- dict.to.where(object, "mapping.status", c("multi", "non"))
+#                    }
+#                    else if (object@rm.unmap == FALSE && object@rm.mult == TRUE)
+#                    {
+#                        where.suff <- dict.to.where(object, "mapping.status", "multi")
+#                    }
+#                    else if (object@rm.unmap == TRUE && object@rm.mult == FALSE)
+#                    {
+#                        where.suff <- dict.to.where(object, "mapping.status", "non")
+#                    }
+#                    else
+#                    {
+#                        stop("ERROR: rm.unmap and rm.mult should not be false here")
+#                    }
+#                    
+#                    outer.query <- paste(outer.query, "OR (", searchCols(obj=object@var.db, name="mapping.status"), where.suff, ")")
+#                }
+    
+    temp.sum.filt <- filter_(temp.sum, paste(paste(var.presence, "== 1"), "&",
+                                             paste(filter.presence, "== 1"), "&",
+                                             paste(searchCols(obj=object, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"))
+                                             ))
+    
+    mapping.query <- paste( searchCols(obj=object, name="mapping.status"), dict.to.where(object, "mapping.status", c("multi", "non")))
+
+    all.probes <- union(select_(temp.sum.filt, object@var.mask.probe.id), select_(filter_(select(test.db, .tables="probe_info"), mapping.query), object@var.mask.probe.id), copy=T)
+
+
+    
+    #get the probesets from oligo
+    
+    
+    
+    
+})
+
+#setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs, target, sortBy="fsetid")
+#          {
+#                #check to see if the database already looks attached...
+#                
+#                all.tabs.pres <- sapply(names(object@var.db@tbsl@tab.list), function(x)
+#                       {
+#                            return(dbExistsTable(db(gene.fs), x))
+#                       })    
+#            
+#                if (all(all.tabs.pres))
+#                {
+#                    dbGetQuery(db(gene.fs), paste0("DETACH DATABASE 'var_mask'"))
+#                }
+#                
+#                #attach the snp mask database to the pd database and retrieve a data.frame of the form found in the rma method below
+#                dbGetQuery(db(gene.fs), paste0("ATTACH DATABASE '",dbFile(object@var.db),"' AS var_mask"))
+#                
+#                fs.dta <- dbGetQuery(db(gene.fs), validProbeQuery(object, target))
+#                
+#                if (!is.null(sortBy)) {
+#                fs.dta <- fs.dta[order(fs.dta[,sortBy]),]
+#                rownames(fs.dta) <- NULL
+#                }
+#                
+#                dbGetQuery(db(gene.fs), paste0("DETACH DATABASE 'var_mask'"))
+#                
+#                return(fs.dta)
+#          })
