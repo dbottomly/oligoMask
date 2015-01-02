@@ -12,8 +12,7 @@ sanger.search.cols <- function()
 
 setClass(Class="VcfDB", contains="Database", representation=list(start.var.table="character", end.var.table="character", var.mask.probe.id="character",
                                                                  var.mask.var.id="character",search.cols="list"),
-         prototype=prototype(start.var.table="reference", end.var.table="probe_info", var.mask.probe.id="probe_id", var.mask.var.id="ref_id", search.cols=sanger.search.cols(),
-                             tbsl=SangerTableSchemaList()))
+         prototype=prototype(var.mask.probe.id="probe_info.probe_id", var.mask.var.id="reference.ref_id", search.cols=sanger.search.cols(), tbsl=SangerTableSchemaList()))
 
 
 setGeneric("searchTables", def=function(obj, ...) standardGeneric("searchTables"))
@@ -23,9 +22,14 @@ setMethod("searchTables", signature("VcfDB"), function(obj, name)
           })
 
 setGeneric("searchCols", def=function(obj, ...) standardGeneric("searchCols"))
-setMethod("searchCols", signature("VcfDB"), function(obj, name)
+setMethod("searchCols", signature("VcfDB"), function(obj, name, include.table=F)
           {
-            return(sapply(obj@search.cols[name], "[[", "column"))
+	    if (include.table == T)
+	    {
+		return(sapply(obj@search.cols[name], function(x)  paste(x[["table"]], x[["column"]], sep=".")))
+	    }else{
+		return(sapply(obj@search.cols[name], "[[", "column"))
+	    }
           })
 
 setGeneric("searchDict", def=function(obj, ...) standardGeneric("searchDict"))

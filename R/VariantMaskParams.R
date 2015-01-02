@@ -256,25 +256,25 @@ dict.to.where <- function(object, dict.name, values)
 #}
 
 #not sure about this function, may no longer be necessary depending on poplite....
-check.and.add.tables <- function(table.name, query.tables, object, default.join.type="NATURAL JOIN")
-{
-    diff.tabs <- setdiff(table.name, query.tables)
-    
-    if (length(diff.tabs) > 0)
-    {
-        for (i in diff.tabs)
-        {
-            #attempt to add to query.tables by finding the shortest path between the end table and the specified table.name
-            new.query.path <- get.shortest.query.path(var.mask.par=object, start=i, finish=query.tables[length(query.tables)])
-            non.exist.tabs <- setdiff(new.query.path, query.tables)
-            query.tables <- append(query.tables, non.exist.tabs)
-        }
-    }
-    
-    query.joins <- rep(default.join.type, length(query.tables))
-    names(query.joins) <- query.tables
-    return(query.joins)
-}
+#check.and.add.tables <- function(table.name, query.tables, object, default.join.type="NATURAL JOIN")
+#{
+#    diff.tabs <- setdiff(table.name, query.tables)
+#    
+#    if (length(diff.tabs) > 0)
+#    {
+#        for (i in diff.tabs)
+#        {
+#            #attempt to add to query.tables by finding the shortest path between the end table and the specified table.name
+#            new.query.path <- get.shortest.query.path(var.mask.par=object, start=i, finish=query.tables[length(query.tables)])
+#            non.exist.tabs <- setdiff(new.query.path, query.tables)
+#            query.tables <- append(query.tables, non.exist.tabs)
+#        }
+#    }
+#    
+#    query.joins <- rep(default.join.type, length(query.tables))
+#    names(query.joins) <- query.tables
+#    return(query.joins)
+#}
 
 setGeneric("maskRMA", def=function(object, ...) standardGeneric("maskRMA"))
 setMethod("maskRMA", signature("GeneFeatureSet"), function(object, background=TRUE, normalize=TRUE, subset=NULL, target="core", mask.type=c("before.rma", "before.summary"), apply.mask=FALSE, mask.params=NULL)
@@ -375,10 +375,18 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
     
     #get data corresponding to the requested columns
     
-    #something like below, though needs to be the select_ method as these will be character values (need to apply the fix to poplite)
-    all.db <- select(test.db, probe_id, align_status, reference.ref_id, filter)
+    #something like below
+    #all.db <- select(test.db, probe_id, align_status, reference.ref_id, filter)
     
-    geno.counts <- paste("n(", object@var.mask.var.id,") > 0")
+    #something like this...
+    #need to find a way to specifically reference the tables though as ref_id is in multiple tables...
+    all.db <- select_(object@var.db, object@var.db@var.mask.probe.id,
+                      object@var.db@var.mask.var.id,
+                      setNames(searchCols(object@var.db, "genotype.filter", include.table=T), NULL),
+                      setNames(searchCols(obj=object@var.db, name="mapping.status", include.table=T), NULL))
+    
+    
+    geno.counts <- paste("n(", object@var.db@var.mask.var.id,") > 0")
 
     geno.filt <- paste("sum(IFNULL(",searchCols(object, "genotype.filter"),dict.to.where(object, dict.name="genotype.filter", values="TRUE"), ",0)) > 0")
     
