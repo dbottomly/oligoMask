@@ -1,7 +1,7 @@
 import(methods)
 #import(DBI)
 #import(RSQLite)
-importFrom(poplite, populate, schema, dbFile)
+importFrom(poplite, populate, schema, dbFile, Database)
 importClassesFrom(poplite, Database, TableSchemaList)
 importClassesFrom(oligoClasses, FeatureSet, GeneFeatureSet)
 importMethodsFrom(oligoClasses, db)

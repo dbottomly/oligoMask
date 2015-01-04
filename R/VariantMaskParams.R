@@ -8,34 +8,34 @@
 #    guess.query.func(oligo:::getFidProbeset)
 #}
 
-guess.query.func <- function(object, target)
-{
-    if (target == "core")
-    {
-        use.func <- oligo:::getFidMetaProbesetCore
-    }else
-    {
-        use.func <- oligo:::getFidProbeset
-    }
-    
-    func.list <- as.list(body(use.func))
-    
-    which.sql <- sapply(func.list, function(x) any(grep("SELECT", x)))
-    
-    if (sum(which.sql) != 1)
-    {
-        stop("ERROR: Guess at query failed--multiple possible queries found")
-    }
-    
-    sql.val <- eval(func.list[which.sql][[1]])
-    
-    if (is.character(sql.val) == F || length(sql.val) != 1)
-    {
-        stop("ERROR: Guess at query failed--only one SQL query expected")
-    }
-    
-    return(sql.val)
-}
+#guess.query.func <- function(object, target)
+#{
+#    if (target == "core")
+#    {
+#        use.func <- oligo:::getFidMetaProbesetCore
+#    }else
+#    {
+#        use.func <- oligo:::getFidProbeset
+#    }
+#    
+#    func.list <- as.list(body(use.func))
+#    
+#    which.sql <- sapply(func.list, function(x) any(grep("SELECT", x)))
+#    
+#    if (sum(which.sql) != 1)
+#    {
+#        stop("ERROR: Guess at query failed--multiple possible queries found")
+#    }
+#    
+#    sql.val <- eval(func.list[which.sql][[1]])
+#    
+#    if (is.character(sql.val) == F || length(sql.val) != 1)
+#    {
+#        stop("ERROR: Guess at query failed--only one SQL query expected")
+#    }
+#    
+#    return(sql.val)
+#}
 
 valid.VariantMaskParams <- function(object)
 {
@@ -415,7 +415,6 @@ setMethod("maskRMA", signature("GeneFeatureSet"), function(object, background=TR
 setGeneric("getProbeDf", def=function(object, ...) standardGeneric("getProbeDf"))
 setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs, target, sortBy="fsetid"){
     
-    oligo.query <- guess.query.func(object, target)
     var.presence <- "contains_var"
     filter.presence <- "passes_filter"
     
@@ -446,7 +445,6 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
     
     if (object@geno.filter == TRUE)
     {
-#       #filter the result to only those with a filter value of TRUE, for this a NATURAL JOIN would suffice as we are filtering down
                     
         #where.base <- paste("WHERE (", var.presence, "= 1 AND", filter.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
         probe.sum.filt <- filter_(temp.sum, paste(paste(var.presence, "== 1"), "&",
@@ -461,9 +459,7 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
                                              paste(searchCols(obj=object, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"))
                                              ))
     }
-#                
-#                outer.query <- paste(outer.query, where.base)
-#                
+    
     if ((object@rm.unmap == TRUE || object@rm.mult == TRUE))
     {
         if ((object@rm.unmap == TRUE && object@rm.mult == TRUE))
@@ -486,8 +482,6 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
             stop("ERROR: rm.unmap and rm.mult should not be false here")
         }
         
-        #outer.query <- paste(outer.query, "OR (", searchCols(obj=object@var.db, name="mapping.status"), where.suff, ")")
-        
         all.rm.probes <- union(select_(probe.sum.filt, probe.only), select_(filter_(select(object@var.db, .tables="probe_info"), mapping.query), probe.only), copy=T)
         
     }else{
@@ -495,11 +489,11 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
         all.rm.probes <- select_(probe.sum.filt, probe.only)
     }
 
-    #get the probesets from oligo
+    #get the probesets from oligo and remove the ones from above
     
-    getProbeInfo(object, field, probeType = "pm", target = "core")
+    oligo.probe.dta <- oligo:::stArrayPmInfo(object = gene.fs, target = target, sortBy = "fsetid")
     
-    
+    return(oligo.probe.dta[oligo.probe.dta[,object@oligo.probe.id] %in% all.rm.probes[,probe.only] == F,])
 })
 
 #setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs, target, sortBy="fsetid")

@@ -117,80 +117,81 @@ test.SangerTableSchemaList <- function()
     dbDisconnect(db.con)
 }
 
-test.populate.db.tbl.schema.list <- function()
-{
-    #populate a subset of the tbsl using the example data  
-    
-    .tc.func <- function(x)
-    {
-        temp.x <- x[!duplicated(x$Transcript.Cluster.ID),"Transcript.Cluster.ID", drop=FALSE]
-        names(temp.x) <- "TC_ID"
-        return(temp.x)
-    }
-    
-    .probe.func <- function(x)
-    {
-        temp.x <- x[,c("Probe.ID", "probe.x", "probe.y", "Transcript.Cluster.ID")]
-        names(temp.x) <- c("Probe_ID", "Probe_X", "Probe_Y", "TC_ID")
-        return(temp.x)
-    }
-    
-    tab.list <- list(transcript_cluster=list(db.cols=c("TC_PK", "TC_ID"),
-                                db.schema=c("INTEGER PRIMARY KEY AUTOINCREMENT", "INTEGER"),
-                                db.constr="",
-                                dta.func=.tc.func, should.ignore=FALSE, foreign.keys=NULL),
-        probe=list(db.cols=c("Probe_PK", "Probe_ID", "Probe_X", "Probe_Y", "TC_PK"),
-                   db.schema=c("INTEGER PRIMARY KEY AUTOINCREMENT", "INTEGER", "INTEGER", "INTEGER", "INTEGER"),
-                   db.constr="",
-                   dta.func=.probe.func, should.ignore=FALSE, foreign.keys=list(transcript_cluster=list(ext.keys="TC_ID", local.keys="TC_PK"))))
-    
-    tbsl <- new("TableSchemaList", tab.list=tab.list)
-    
-    db.con <- dbConnect(SQLite(), tempfile())
-    
-    probe.tab.file <- om.tab.file()
-    
-    probe.tab <- read.delim(probe.tab.file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-    
-    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables=NULL, should.debug=TRUE)
-
-    test.query <- dbGetQuery(db.con, "SELECT Probe_ID, Probe_X, Probe_Y, TC_ID FROM probe JOIN transcript_cluster USING (TC_PK)")
-    names(test.query) <- c("Probe.ID", "probe.x", "probe.y", "Transcript.Cluster.ID")
-    
-    test.query <- test.query[do.call("order", test.query),]
-    rownames(test.query) <- NULL
-    
-    sub.probe.tab <- probe.tab[,c("Probe.ID", "probe.x", "probe.y", "Transcript.Cluster.ID")]
-    sub.probe.tab <- sub.probe.tab[do.call("order", sub.probe.tab),]
-    rownames(sub.probe.tab) <- NULL
-    
-    checkEquals(test.query, sub.probe.tab)
-    
-    dbDisconnect(db.con)
-    
-    #should be able to easily populate a single table without dependencies
-    
-    db.con <- dbConnect(SQLite(), tempfile())
-    
-    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables="transcript_cluster", should.debug=TRUE)
-    
-    comp.tab <- .tc.func(probe.tab)
-    comp.tab <- cbind(TC_PK=1:nrow(comp.tab), comp.tab)
-    rownames(comp.tab) <- NULL
-    
-    test.query.2 <- dbGetQuery(db.con, "SELECT * FROM transcript_cluster")
-    
-    checkEquals(comp.tab, test.query.2)
-    
-    dbDisconnect(db.con)
-    
-    #should throw an error if attempting to populate a table with dependencies
-    
-    db.con <- dbConnect(SQLite(), tempfile())
-    checkException(populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables="probe", should.debug=TRUE))
-    
-    dbDisconnect(db.con)
-}
+#This has since been moved to poplite
+#test.populate.db.tbl.schema.list <- function()
+#{
+#    #populate a subset of the tbsl using the example data  
+#    
+#    .tc.func <- function(x)
+#    {
+#        temp.x <- x[!duplicated(x$Transcript.Cluster.ID),"Transcript.Cluster.ID", drop=FALSE]
+#        names(temp.x) <- "TC_ID"
+#        return(temp.x)
+#    }
+#    
+#    .probe.func <- function(x)
+#    {
+#        temp.x <- x[,c("Probe.ID", "probe.x", "probe.y", "Transcript.Cluster.ID")]
+#        names(temp.x) <- c("Probe_ID", "Probe_X", "Probe_Y", "TC_ID")
+#        return(temp.x)
+#    }
+#    
+#    tab.list <- list(transcript_cluster=list(db.cols=c("TC_PK", "TC_ID"),
+#                                db.schema=c("INTEGER PRIMARY KEY AUTOINCREMENT", "INTEGER"),
+#                                db.constr="",
+#                                dta.func=.tc.func, should.ignore=FALSE, foreign.keys=NULL),
+#        probe=list(db.cols=c("Probe_PK", "Probe_ID", "Probe_X", "Probe_Y", "TC_PK"),
+#                   db.schema=c("INTEGER PRIMARY KEY AUTOINCREMENT", "INTEGER", "INTEGER", "INTEGER", "INTEGER"),
+#                   db.constr="",
+#                   dta.func=.probe.func, should.ignore=FALSE, foreign.keys=list(transcript_cluster=list(ext.keys="TC_ID", local.keys="TC_PK"))))
+#    
+#    tbsl <- new("TableSchemaList", tab.list=tab.list)
+#    
+#    db.con <- dbConnect(SQLite(), tempfile())
+#    
+#    probe.tab.file <- om.tab.file()
+#    
+#    probe.tab <- read.delim(probe.tab.file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
+#    
+#    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables=NULL, should.debug=TRUE)
+#
+#    test.query <- dbGetQuery(db.con, "SELECT Probe_ID, Probe_X, Probe_Y, TC_ID FROM probe JOIN transcript_cluster USING (TC_PK)")
+#    names(test.query) <- c("Probe.ID", "probe.x", "probe.y", "Transcript.Cluster.ID")
+#    
+#    test.query <- test.query[do.call("order", test.query),]
+#    rownames(test.query) <- NULL
+#    
+#    sub.probe.tab <- probe.tab[,c("Probe.ID", "probe.x", "probe.y", "Transcript.Cluster.ID")]
+#    sub.probe.tab <- sub.probe.tab[do.call("order", sub.probe.tab),]
+#    rownames(sub.probe.tab) <- NULL
+#    
+#    checkEquals(test.query, sub.probe.tab)
+#    
+#    dbDisconnect(db.con)
+#    
+#    #should be able to easily populate a single table without dependencies
+#    
+#    db.con <- dbConnect(SQLite(), tempfile())
+#    
+#    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables="transcript_cluster", should.debug=TRUE)
+#    
+#    comp.tab <- .tc.func(probe.tab)
+#    comp.tab <- cbind(TC_PK=1:nrow(comp.tab), comp.tab)
+#    rownames(comp.tab) <- NULL
+#    
+#    test.query.2 <- dbGetQuery(db.con, "SELECT * FROM transcript_cluster")
+#    
+#    checkEquals(comp.tab, test.query.2)
+#    
+#    dbDisconnect(db.con)
+#    
+#    #should throw an error if attempting to populate a table with dependencies
+#    
+#    db.con <- dbConnect(SQLite(), tempfile())
+#    checkException(populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables="probe", should.debug=TRUE))
+#    
+#    dbDisconnect(db.con)
+#}
 
 ###still need to fix me:  attributes are not identical across measure variables; they will be dropped
 
@@ -423,93 +424,94 @@ examine.vcf.db <- function(db.name, db.schema, tab.aln, vcf.files, strain.names)
     file.remove(db.name)
 }
 
-test.validProbeQuery<- function()
-{   
-    var.db <- new("VcfDB", db.path=om.db.file(), tbsl=SangerTableSchemaList(), start.var.table="reference", end.var.table="probe_info", var.mask.probe.id="probe_id", var.mask.var.id="ref_id")
-    var.mask.par <- VariantMaskParams(var.db=var.db, geno.filter=FALSE, rm.unmap=TRUE, rm.mult=TRUE, mask.type="static")
-    
-    db.con <- dbConnect(SQLite(), var.mask.par@var.db@db.path)
-    
-    number.multi.un <- dbGetQuery(db.con, "SELECT COUNT(*) FROM probe_info WHERE align_status in ('MultiMapped', 'UnMapped')")
-    number.un <- dbGetQuery(db.con, "SELECT COUNT(*) FROM probe_info WHERE align_status in ('UnMapped')")
-    number.multi <- dbGetQuery(db.con, "SELECT COUNT(*) FROM probe_info WHERE align_status in ('MultiMapped')")
-    number.unique.var <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_align_id)) FROM probe_to_snp")
-    number.unique.filt.var <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_align_id)) FROM probe_to_snp NATURAL JOIN reference WHERE filter = 'TRUE'")
-    
-    target <- "probeset"
-    
-    #default setting
-    var.mask.par@geno.filter <- FALSE
-    var.mask.par@rm.mult <- TRUE
-    var.mask.par@rm.unmap <- TRUE
-    
-    test.1 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-    
-    checkTrue(nrow(test.1) == number.unique.var[,1] + number.multi.un[,1])
-    
-    var.mask.par@geno.filter <- TRUE
-    var.mask.par@rm.mult <- TRUE
-    var.mask.par@rm.unmap <- TRUE
-    test.2 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-    
-    #this should be a smaller version of test.1 as it is filtered
-    checkTrue(nrow(test.2) <= nrow(test.1))
-    rm(test.1)
-    checkTrue(nrow(test.2) == number.unique.filt.var[,1] + number.multi.un[,1])
-    rm(test.2)
-    
-    var.mask.par@geno.filter <- FALSE
-    var.mask.par@rm.mult <- FALSE
-    var.mask.par@rm.unmap <- TRUE
-    
-    test.3 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-    
-    checkTrue(nrow(test.3) == number.unique.var[,1] + number.un[,1])
-    rm(test.3)
-    
-    var.mask.par@geno.filter <- TRUE
-    var.mask.par@rm.mult <- FALSE
-    var.mask.par@rm.unmap <- TRUE
-    
-    test.4 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-    
-    checkTrue(nrow(test.4) == number.unique.filt.var[,1] + number.un[,1])
-    rm(test.4)
-    
-    var.mask.par@geno.filter <- FALSE
-    var.mask.par@rm.mult <- TRUE
-    var.mask.par@rm.unmap <- FALSE
-    
-    test.5 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-    
-    checkTrue(nrow(test.5) == number.unique.var[,1] + number.multi[,1])
-    
-    var.mask.par@geno.filter <- TRUE
-    var.mask.par@rm.mult <- TRUE
-    var.mask.par@rm.unmap <- FALSE
-    
-    test.6 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-    
-    checkTrue(nrow(test.6) == number.unique.filt.var[,1] + number.multi[,1])
-    
-    var.mask.par@geno.filter <- FALSE
-    var.mask.par@rm.mult <- FALSE
-    var.mask.par@rm.unmap <- FALSE
-    
-    test.7 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-    
-    checkTrue(nrow(test.7) == number.unique.var[,1])
-    
-    var.mask.par@geno.filter <- TRUE
-    var.mask.par@rm.mult <- FALSE
-    var.mask.par@rm.unmap <- FALSE
-    
-    test.8 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-    
-    checkTrue(nrow(test.8) == number.unique.filt.var[,1])
-    
-    dbDisconnect(db.con)
-}
+#Method will no longer exist
+#test.validProbeQuery<- function()
+#{   
+#    var.db <- new("VcfDB", db.path=om.db.file(), tbsl=SangerTableSchemaList(), start.var.table="reference", end.var.table="probe_info", var.mask.probe.id="probe_id", var.mask.var.id="ref_id")
+#    var.mask.par <- VariantMaskParams(var.db=var.db, geno.filter=FALSE, rm.unmap=TRUE, rm.mult=TRUE, mask.type="static")
+#    
+#    db.con <- dbConnect(SQLite(), var.mask.par@var.db@db.path)
+#    
+#    number.multi.un <- dbGetQuery(db.con, "SELECT COUNT(*) FROM probe_info WHERE align_status in ('MultiMapped', 'UnMapped')")
+#    number.un <- dbGetQuery(db.con, "SELECT COUNT(*) FROM probe_info WHERE align_status in ('UnMapped')")
+#    number.multi <- dbGetQuery(db.con, "SELECT COUNT(*) FROM probe_info WHERE align_status in ('MultiMapped')")
+#    number.unique.var <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_align_id)) FROM probe_to_snp")
+#    number.unique.filt.var <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_align_id)) FROM probe_to_snp NATURAL JOIN reference WHERE filter = 'TRUE'")
+#    
+#    target <- "probeset"
+#    
+#    #default setting
+#    var.mask.par@geno.filter <- FALSE
+#    var.mask.par@rm.mult <- TRUE
+#    var.mask.par@rm.unmap <- TRUE
+#    
+#    test.1 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
+#    
+#    checkTrue(nrow(test.1) == number.unique.var[,1] + number.multi.un[,1])
+#    
+#    var.mask.par@geno.filter <- TRUE
+#    var.mask.par@rm.mult <- TRUE
+#    var.mask.par@rm.unmap <- TRUE
+#    test.2 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
+#    
+#    #this should be a smaller version of test.1 as it is filtered
+#    checkTrue(nrow(test.2) <= nrow(test.1))
+#    rm(test.1)
+#    checkTrue(nrow(test.2) == number.unique.filt.var[,1] + number.multi.un[,1])
+#    rm(test.2)
+#    
+#    var.mask.par@geno.filter <- FALSE
+#    var.mask.par@rm.mult <- FALSE
+#    var.mask.par@rm.unmap <- TRUE
+#    
+#    test.3 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
+#    
+#    checkTrue(nrow(test.3) == number.unique.var[,1] + number.un[,1])
+#    rm(test.3)
+#    
+#    var.mask.par@geno.filter <- TRUE
+#    var.mask.par@rm.mult <- FALSE
+#    var.mask.par@rm.unmap <- TRUE
+#    
+#    test.4 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
+#    
+#    checkTrue(nrow(test.4) == number.unique.filt.var[,1] + number.un[,1])
+#    rm(test.4)
+#    
+#    var.mask.par@geno.filter <- FALSE
+#    var.mask.par@rm.mult <- TRUE
+#    var.mask.par@rm.unmap <- FALSE
+#    
+#    test.5 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
+#    
+#    checkTrue(nrow(test.5) == number.unique.var[,1] + number.multi[,1])
+#    
+#    var.mask.par@geno.filter <- TRUE
+#    var.mask.par@rm.mult <- TRUE
+#    var.mask.par@rm.unmap <- FALSE
+#    
+#    test.6 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
+#    
+#    checkTrue(nrow(test.6) == number.unique.filt.var[,1] + number.multi[,1])
+#    
+#    var.mask.par@geno.filter <- FALSE
+#    var.mask.par@rm.mult <- FALSE
+#    var.mask.par@rm.unmap <- FALSE
+#    
+#    test.7 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
+#    
+#    checkTrue(nrow(test.7) == number.unique.var[,1])
+#    
+#    var.mask.par@geno.filter <- TRUE
+#    var.mask.par@rm.mult <- FALSE
+#    var.mask.par@rm.unmap <- FALSE
+#    
+#    test.8 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
+#    
+#    checkTrue(nrow(test.8) == number.unique.filt.var[,1])
+#    
+#    dbDisconnect(db.con)
+#}
 
 test.getProbeDf <- function()
 {   

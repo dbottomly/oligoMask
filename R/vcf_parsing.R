@@ -1,84 +1,84 @@
 ###should be replaced with populate from poplite..
-populate.db.tbl.schema.list <- function(db.con, db.schema, ins.vals=NULL, use.tables=NULL, should.debug=FALSE)
-{
-	if (class(db.con) != "SQLiteConnection")
-	{
-		stop("ERROR: db.con needs to be of class SQLiteConnection")
-	}
-	
-	if (class(db.schema) != "TableSchemaList")
-	{
-		stop("ERROR: db.schema needs to be of class TableSchemaList")
-	}
-	
-	if (missing(ins.vals) || is.null(ins.vals))
-	{
-		stop("ERROR: ins.vals cannot be missing or NULL")
-	}
-	
-    if (missing(use.tables) || is.null(use.tables) || is.na(use.tables))
-    {
-        use.tables <- schemaNames(db.schema)
-    }
-    else if (all(use.tables %in% schemaNames(db.schema)) == FALSE)
-    {
-        stop("ERROR: Invalid values for use.tables")
-    }
-    
-    #schemaNames should be arranged in the order of population
-    for(i in use.tables)
-    {
-        message(paste("Starting", i))
-        #if table doesn't exist, then create it
-        if (dbExistsTable(db.con, tableName(db.schema, i, mode="normal")) == FALSE)
-        {
-            if (should.debug) message("Creating database table")
-            if (should.debug) message(createTable(db.schema, i, mode="normal"))
-            dbGetQuery(db.con, createTable(db.schema, i, mode="normal"))
-        }
-        
-        #then merge with existing databases as necessary
-
-        if (shouldMerge(db.schema, i))
-        {
-            if (should.debug) message("Creating temporary table for merging")
-            
-            if (dbExistsTable(db.con, tableName(db.schema, i, mode="merge")))
-            {
-                stop("ERROR: Temporary tables should not exist prior to this loop")
-            }
-            
-            if (should.debug) message(createTable(db.schema, i, mode="merge"))
-            dbGetQuery(db.con, createTable(db.schema, i, mode="merge"))
-            
-            if (should.debug) message("Adding to temporary table")
-            if (should.debug) message(insertStatement(db.schema, i, mode="merge"))
-            #first add the data to temporary database
-            dbBeginTransaction(db.con)
-            dbGetPreparedQuery(db.con, insertStatement(db.schema, i, mode="merge"), bind.data = bindDataFunction(db.schema, i, ins.vals, mode="merge"))
-            dbCommit(db.con)
-            
-            #merge from temporary into main table
-            if (should.debug) message("Merging with existing table(s)")
-            if (should.debug) message(mergeStatement(db.schema, i))
-            dbGetQuery(db.con, mergeStatement(db.schema, i))
-            
-            #then also drop intermediate tables
-            if (should.debug) message("Removing temporary table")
-            if (should.debug) message(paste("DROP TABLE", tableName(db.schema, i, mode="merge")))
-            dbGetQuery(db.con, paste("DROP TABLE", tableName(db.schema, i, mode="merge")))
-        }else
-        {
-            if (should.debug) message("Adding to database table")
-            if (should.debug) message(insertStatement(db.schema, i))
-            #add the data to database
-            dbBeginTransaction(db.con)
-            dbGetPreparedQuery(db.con, insertStatement(db.schema, i), bind.data = bindDataFunction(db.schema, i, ins.vals))
-            dbCommit(db.con)
-        }
-        
-    }
-}
+#populate.db.tbl.schema.list <- function(db.con, db.schema, ins.vals=NULL, use.tables=NULL, should.debug=FALSE)
+#{
+#	if (class(db.con) != "SQLiteConnection")
+#	{
+#		stop("ERROR: db.con needs to be of class SQLiteConnection")
+#	}
+#	
+#	if (class(db.schema) != "TableSchemaList")
+#	{
+#		stop("ERROR: db.schema needs to be of class TableSchemaList")
+#	}
+#	
+#	if (missing(ins.vals) || is.null(ins.vals))
+#	{
+#		stop("ERROR: ins.vals cannot be missing or NULL")
+#	}
+#	
+#    if (missing(use.tables) || is.null(use.tables) || is.na(use.tables))
+#    {
+#        use.tables <- schemaNames(db.schema)
+#    }
+#    else if (all(use.tables %in% schemaNames(db.schema)) == FALSE)
+#    {
+#        stop("ERROR: Invalid values for use.tables")
+#    }
+#    
+#    #schemaNames should be arranged in the order of population
+#    for(i in use.tables)
+#    {
+#        message(paste("Starting", i))
+#        #if table doesn't exist, then create it
+#        if (dbExistsTable(db.con, tableName(db.schema, i, mode="normal")) == FALSE)
+#        {
+#            if (should.debug) message("Creating database table")
+#            if (should.debug) message(createTable(db.schema, i, mode="normal"))
+#            dbGetQuery(db.con, createTable(db.schema, i, mode="normal"))
+#        }
+#        
+#        #then merge with existing databases as necessary
+#
+#        if (shouldMerge(db.schema, i))
+#        {
+#            if (should.debug) message("Creating temporary table for merging")
+#            
+#            if (dbExistsTable(db.con, tableName(db.schema, i, mode="merge")))
+#            {
+#                stop("ERROR: Temporary tables should not exist prior to this loop")
+#            }
+#            
+#            if (should.debug) message(createTable(db.schema, i, mode="merge"))
+#            dbGetQuery(db.con, createTable(db.schema, i, mode="merge"))
+#            
+#            if (should.debug) message("Adding to temporary table")
+#            if (should.debug) message(insertStatement(db.schema, i, mode="merge"))
+#            #first add the data to temporary database
+#            dbBeginTransaction(db.con)
+#            dbGetPreparedQuery(db.con, insertStatement(db.schema, i, mode="merge"), bind.data = bindDataFunction(db.schema, i, ins.vals, mode="merge"))
+#            dbCommit(db.con)
+#            
+#            #merge from temporary into main table
+#            if (should.debug) message("Merging with existing table(s)")
+#            if (should.debug) message(mergeStatement(db.schema, i))
+#            dbGetQuery(db.con, mergeStatement(db.schema, i))
+#            
+#            #then also drop intermediate tables
+#            if (should.debug) message("Removing temporary table")
+#            if (should.debug) message(paste("DROP TABLE", tableName(db.schema, i, mode="merge")))
+#            dbGetQuery(db.con, paste("DROP TABLE", tableName(db.schema, i, mode="merge")))
+#        }else
+#        {
+#            if (should.debug) message("Adding to database table")
+#            if (should.debug) message(insertStatement(db.schema, i))
+#            #add the data to database
+#            dbBeginTransaction(db.con)
+#            dbGetPreparedQuery(db.con, insertStatement(db.schema, i), bind.data = bindDataFunction(db.schema, i, ins.vals))
+#            dbCommit(db.con)
+#        }
+#        
+#    }
+#}
 
 
 
@@ -93,7 +93,7 @@ filter.sanger.vcf <- function(snp.vcf.list, param.list)
 		stop("ERROR: filter function filter.sanger.vcf needs param.list to have a named element 'strain.names'")
 	}
 	
-    strain.names <- param.list$strain.names
+	 strain.names <- param.list$strain.names
     
 	if (is.character(strain.names) == FALSE || length(strain.names) == 0)
 	{
@@ -322,7 +322,9 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
 		  stop("ERROR: need to either set package.info as NULL or provide a list")
 	 }
 	
-        db.con <- dbConnect(SQLite(), db.name)
+        #db.con <- dbConnect(SQLite(), db.name)
+	
+	sanger.db <- Database(db.schema, db.name)
         
         sanger.vcf.param <- ScanVcfParam(trimEmpty=FALSE, fixed="ALT", geno=c("GT", "FI"), info=NA, strand="*")
         
@@ -379,8 +381,9 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
 				
                 if (should.debug) message("Loading probe_info and probe_align tables")
                 
-                populate.db.tbl.schema.list(db.con, db.schema, list(probe_info=probe.info, probe_align=probe.aligns), use.tables=c("probe_info", "probe_align"), should.debug=should.debug)
-                
+                #populate.db.tbl.schema.list(db.con, db.schema, list(probe_info=probe.info, probe_align=probe.aligns), use.tables=c("probe_info", "probe_align"), should.debug=should.debug)
+                populate(sanger.db, probe_info=probe.info, probe_align=probe.aligns, use.tables=c("probe_info", "probe_align"),should.debug=should.debug)
+		
                 if (should.debug) message("Loading data from VCF files")
 					
 				#keep only the unique probes for mapping
@@ -389,7 +392,7 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
                 
                 for(i in 1:length(vcf.files))
                 {
-                    make.vcf.table(db.schema=db.schema, window.size=window.size, vcf.name=vcf.files[i], db.con=db.con, probe.grange=probe.aligns, vcf.type=vcf.labels[i], use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), limit=NULL, should.debug=should.debug, vcf.param=sanger.vcf.param,
+                    make.vcf.table(db.obj=sanger.db, window.size=window.size, vcf.name=vcf.files[i], probe.grange=probe.aligns, vcf.type=vcf.labels[i], use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), limit=NULL, should.debug=should.debug, vcf.param=sanger.vcf.param,
 									   filter.func=filter.sanger.vcf, filter.params=list(strain.names=strain.names))
                 }
                 
@@ -399,7 +402,7 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
                 stop("ERROR: Unsupported tab file specified")
         }
 		
-	 invisible(dbDisconnect(db.con))
+	 return(sanger.db)
 }
 
 #now divide the probes into the different alignment categories
@@ -429,7 +432,7 @@ add.status.probe.info <- function(probe.info, probe.aligns, common.chrs)
 	return(probe.info)
 }
 
-make.vcf.table <- function(db.schema, window.size, vcf.name, db.con, probe.grange, vcf.type="SNV", use.tables=NULL, limit=NULL, should.debug=FALSE, vcf.param=NULL, filter.func=NULL, filter.params=list())
+make.vcf.table <- function(db.obj, window.size, vcf.name, probe.grange, vcf.type="SNV", use.tables=NULL, limit=NULL, should.debug=FALSE, vcf.param=NULL, filter.func=NULL, filter.params=list())
 {
     
     if (missing(limit) || is.null(limit))
@@ -497,9 +500,10 @@ make.vcf.table <- function(db.schema, window.size, vcf.name, db.con, probe.grang
         {
             if (should.debug) message("Adding to database")
 			
-            snp.type.vcf.list <- list(vcf_list=sub.snp.vcf.list, vcf_annot=c(vcf_name=vcf.name, type=vcf.type))
+            #snp.type.vcf.list <- list(vcf_list=sub.snp.vcf.list, vcf_annot=c(vcf_name=vcf.name, type=vcf.type))
             
-            populate.db.tbl.schema.list(db.con, db.schema, snp.type.vcf.list, use.tables, should.debug)
+            #populate.db.tbl.schema.list(db.con, db.schema, snp.type.vcf.list, use.tables, should.debug)
+	    populate(db.obj, vcf_list=sub.snp.vcf.list, vcf_annot=c(vcf_name=vcf.name, type=vcf.type), use.tables=use.tables, should.debug=should.debug)
         }
     
     }
