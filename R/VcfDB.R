@@ -93,23 +93,25 @@ setMethod("show", signature("VcfDB"), function(object)
 				message("An object of class VcfDB pointing to a standalone DB")
 			}
 			
-			db.con <- dbConnect(SQLite(), dbFile(object))
+			#db.con <- dbConnect(SQLite(), dbFile(object))
 			
 			if (isTRUE(all.equal(schema(object), SangerTableSchemaList())))
 			{
-				probe.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_id)) FROM probe_info")[,1]
-				message(paste("Containing alignments for", probe.count, "probes"))
+				message("in progress")
+				#probe.count <- summarize(group_by(select(object, probe_info.probe_id), probe_id), n_distinct(probe_id))
+				#probe.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_id)) FROM probe_info")[,1]
+				#message(paste("Containing alignments for", probe.count, "probes"))
 				
-				var.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(ref_id)) FROM reference")[,1]
-				strain.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(strain)) FROM genotype")[,1]
-				message(paste("Containing", var.count , "variants from", strain.count, "inbred strains"))
+				#var.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(ref_id)) FROM reference")[,1]
+				#strain.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(strain)) FROM genotype")[,1]
+				#message(paste("Containing", var.count , "variants from", strain.count, "inbred strains"))
 			}
 			else
 			{
 				stop("ERROR: Unknown type of TableSchemaList")
 			}
 			
-			invisible(dbDisconnect(db.con))
+			#invisible(dbDisconnect(db.con))
         })
 
 #summary method

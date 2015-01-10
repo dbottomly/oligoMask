@@ -6,6 +6,7 @@ stopifnot(require(BSgenome.Mmusculus.UCSC.mm9))
 stopifnot(require(VariantAnnotation))
 stopifnot(require(reshape2))
 stopifnot(require(oligo))
+stopifnot(require(poplite))
 
 data("SunGeneFS")
 
@@ -45,9 +46,10 @@ test.SangerTableSchemaList <- function()
                                              FI=matrix(c(rep(NA, 8), 1, rep(NA, 9)),ncol=18, dimnames=list(NULL, all.strain.names)))))
     
     
+    db.file <- tempfile()
     tbsl <- SangerTableSchemaList()
     
-    db.con <- dbConnect(SQLite(), tempfile())
+    test.db <- Database(tbsl, db.file)
     
     #pre-add the probe alignment table
     probe.align.dta <- data.frame(probe_align_id=1:3, probe_chr="1", probe_start=c(5070129, 16511945,72635669), probe_end=c(5070153, 16511969, 72635693), probe_ind=1:3, stringsAsFactors=FALSE)
@@ -55,13 +57,18 @@ test.SangerTableSchemaList <- function()
     dbWriteTable(db.con, "probe_align", probe.align.dta, row.names=FALSE)
     
     #snvs
-    all.snp.list <- list(vcf_list=snp.vcf.list, vcf_annot=c(vcf_name="test_1.txt", type="SNV"))
-    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=all.snp.list, use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
+    #all.snp.list <- list(vcf_list=snp.vcf.list, vcf_annot=c(vcf_name="test_1.txt", type="SNV"))
+    #populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=all.snp.list, use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
+    populate(test.db, vcf_list=snp.vcf.list, vcf_annot=c(vcf_name="test_1.txt", type="SNV",
+          use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
     
     #indels
     
-    all.indel.list <- list(vcf_list=indel.vcf.list, vcf_annot=c(vcf_name="test_2.txt", type="INDEL"))
-    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=all.indel.list, use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
+    #all.indel.list <- list(vcf_list=indel.vcf.list, vcf_annot=c(vcf_name="test_2.txt", type="INDEL"))
+    #populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=all.indel.list, use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
+    populate(test.db,vcf_list=indel.vcf.list, vcf_annot=c(vcf_name="test_2.txt", type="INDEL",use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
+    
+    db.con <- dbConnect(SQLite(), dbFile(test.db))
     
     test <- dbGetQuery(db.con, "SELECT * FROM reference NATURAL JOIN genotype NATURAL JOIN allele NATURAL JOIN vcf_annot")
     
@@ -198,11 +205,12 @@ test.SangerTableSchemaList <- function()
 test.make.vcf.table <- function()
 {
     
-    db.schema <- new("TableSchemaList")
+    #db.schema <- new("TableSchemaList")
+    db.schema <- SangerTableSchemaList()
     #ust a relatively strange number < the length of probe.grange
     window.size <- 109
     vcf.name <- om.vcf.file()
-    db.con <- dbConnect(SQLite(), tempfile())
+    #db.con <- dbConnect(SQLite(), tempfile())
     
     lo.probe.dta <- read.delim(om.lo.file(), sep="\t", header=TRUE, stringsAsFactors=FALSE)
     #duplications exist here, so remove them ahead of time
@@ -227,7 +235,11 @@ test.make.vcf.table <- function()
     filter.func <- oligoMask:::filter.sanger.vcf 
     filter.params <- list(strain.names=c("CASTEiJ", "AJ", "PWKPhJ", "129S1", "NZO", "NODShiLtJ", "WSBEiJ"))
     
-    make.vcf.table(db.schema, window.size, vcf.name, db.con,probe.grange, vcf.type, use.tables, limit, should.debug, vcf.param, filter.func, filter.params)
+    db.obj <- Database(db.schema, tempfile())
+    
+    make.vcf.table(db.obj, window.size, vcf.name, probe.grange, vcf.type, use.tables, limit, should.debug, vcf.param, filter.func, filter.params)
+    
+    db.con <- dbConnect(SQLite(), dbFile(db.obj))
     
     all.dta <- dbGetQuery(db.con, "SELECT seqnames, start, end, filter, alleles, allele_num, geno_chr, strain FROM reference NATURAL JOIN allele NATURAL JOIN genotype NATURAL JOIN vcf_annot")
     
@@ -357,7 +369,7 @@ test.create.sanger.mouse.vcf.db <- function()
     
     #then do an Rcheck to make sure the package builds etc...
     
-    #only do this test if these files exist, which is only likely to be try on my local machine
+    #only do this test if these files exist, which is only likely to be true on my local machine
     
     #bowtie.work <- system(package.info$BOWTIE_PATH) != 127
     #vcf.query.cmd.work <- system(package.info$VCF_QUERY_CMD) != 127
