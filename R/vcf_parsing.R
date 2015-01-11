@@ -224,8 +224,9 @@ run.analysis.strand <- function(probe.dss, bs.genome, seqnames, strands, max.mis
 #db.schema <- new("TableSchemaList")
 #db.name <- "test.db"
 #window.size=1000
-
-create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name="test.db", keep.category="main", window.size=1000, max.mismatch=1, limit.chr=NULL, should.debug=FALSE, package.info=NULL)
+#instead of db.schema, db.name="test.db", sanger.db is a VcfDB object, where dbFile(sanger.db) should initially point to the name of the package, will be changed internally so the returned/
+#created object will be correct.
+create.sanger.mouse.vcf.db <- function(sanger.db, vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, keep.category="main", window.size=1000, max.mismatch=1, limit.chr=NULL, should.debug=FALSE, package.info=NULL)
 {
         if (is.null(vcf.files) == TRUE || is.null(vcf.labels) == TRUE || is.character(vcf.files) == FALSE || is.character(vcf.labels) == FALSE || length(vcf.files) != length(vcf.labels))
         {
@@ -245,11 +246,6 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
         if (is.character(strain.names) == FALSE || length(strain.names) == 0)
         {
             stop("ERROR: strain.names needs to be a positive length character vector")
-        }
-        
-        if (file.exists(db.name))
-        {
-            unlink(db.name, recursive=TRUE)
         }
 		
 	 if (missing(limit.chr) || is.null(limit.chr))
@@ -277,8 +273,8 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
 	 if (is.null(package.info) == FALSE && class(package.info) == "list" && all(names(package.info) %in% c("AUTHOR", "AUTHOREMAIL", "BOWTIE_PATH", "GENOME_PATH", "VCF_QUERY_CMD", "VCF_TYPE")))
 	 {
 		 # browser()
-		  actual.db.name <- file.path(db.name, "inst", "extdata", "package.db")
-		  actual.tbsl.name <- file.path(db.name, "inst", "extdata", "tbsl.RData")
+		  actual.db.name <- file.path(dbFile(sanger.db), "inst", "extdata", "package.db")
+		  actual.vcfdb.name <- file.path(dbFile(sanger.db), "inst", "extdata", "VcfDB.RData")
 		  
 		  package.desc <- packageDescription("oligoMask")
 		  
@@ -295,23 +291,23 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
 			  use.chr.vec <- limit.chr 
 		  }
 		  
-		  syms <- list(VERSION=package.desc$Version, MANUF="Affymetrix", CHIPNAME=gsub("-", "_", strsplit(basename(probe.tab.file), "\\.")[[1]][1]), LIC=package.desc$License, TBSLDATA=basename(actual.tbsl.name), DB_NAME=basename(actual.db.name),
+		  syms <- list(VERSION=package.desc$Version, MANUF="Affymetrix", CHIPNAME=gsub("-", "_", strsplit(basename(probe.tab.file), "\\.")[[1]][1]), LIC=package.desc$License, VCFDBDATA=basename(actual.vcfdb.name), DB_NAME=basename(actual.db.name),
 			  GENOME_PACKAGE=bs.genome@pkgname, LIMIT_CHR=paste0("c(", paste(paste0("'",use.chr.vec, "'"), collapse=","),")"), VAR_TYPE=var.type.str,
 			  NUM_MISMATCH=as.character(max.mismatch))
 		  
 		  syms <- append(syms, package.info)
 	 
-		  Biobase::createPackage(pkgname=db.name, destinationDir=".", originDir=system.file(file.path("extdata", "oligoMask.template"), package = "oligoMask"), symbolValues=syms, unlink=TRUE)
+		  Biobase::createPackage(pkgname=dbFile(sanger.db), destinationDir=".", originDir=system.file(file.path("extdata", "oligoMask.template"), package = "oligoMask"), symbolValues=syms, unlink=TRUE)
 		  
 		  #the extdata directory doesn't get transferred over probably as it is empty...
-		  if (file.exists(dirname(actual.tbsl.name))==FALSE)
+		  if (file.exists(dirname(actual.vcfdb.name))==FALSE)
 		  {
-			   dir.create(dirname(actual.tbsl.name), recursive=TRUE)
+			   dir.create(dirname(actual.vcfdb.name), recursive=TRUE)
 		  }
 		  
-		  save(db.schema, file=actual.tbsl.name)
+		  save(vcfdb.obj, file=actual.vcfdb.name)
 		       
-		  db.name <- actual.db.name
+		  sanger.db@db.file <- actual.db.name
 	 }
 	 else if (is.null(package.info) == FALSE && class(package.info) == "list" && all(names(package.info) %in% c("AUTHOR", "AUTHOREMAIL", "BOWTIE_PATH", "GENOME_PATH", "VCF_QUERY_CMD", "VCF_TYPE")) == FALSE)
 	 {
@@ -324,7 +320,7 @@ create.sanger.mouse.vcf.db <- function(vcf.files, vcf.labels, probe.tab.file, st
 	
         #db.con <- dbConnect(SQLite(), db.name)
 	
-	sanger.db <- Database(db.schema, db.name)
+	#sanger.db <- Database(db.schema, db.name)
         
         sanger.vcf.param <- ScanVcfParam(trimEmpty=FALSE, fixed="ALT", geno=c("GT", "FI"), info=NA, strand="*")
         
