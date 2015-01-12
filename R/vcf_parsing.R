@@ -305,7 +305,7 @@ create.sanger.mouse.vcf.db <- function(sanger.db, vcf.files, vcf.labels, probe.t
 			   dir.create(dirname(actual.vcfdb.name), recursive=TRUE)
 		  }
 		  
-		  save(vcfdb.obj, file=actual.vcfdb.name)
+		  save(sanger.db, file=actual.vcfdb.name)
 		       
 		  sanger.db@db.file <- actual.db.name
 	 }
@@ -334,7 +334,7 @@ create.sanger.mouse.vcf.db <- function(sanger.db, vcf.files, vcf.labels, probe.t
 			 message("NOTICE: chromosome annotations not found in VCF, using those from the supplied genome")
 			 common.chrs <- as.character(seqnames(bs.genome))
 			 
-	 }else if(seqnameStyle(Seqinfo(seqnames=common.chrs)) != seqnameStyle(bs.genome))
+	 }else if(seqlevelsStyle(Seqinfo(seqnames=common.chrs)) != seqlevelsStyle(bs.genome))
 	 {
                 stop("ERROR: Chromosome names are not in the same style")
 	 }

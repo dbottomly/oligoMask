@@ -54,12 +54,16 @@ test.SangerTableSchemaList <- function()
     #pre-add the probe alignment table
     probe.align.dta <- data.frame(probe_align_id=1:3, probe_chr="1", probe_start=c(5070129, 16511945,72635669), probe_end=c(5070153, 16511969, 72635693), probe_ind=1:3, stringsAsFactors=FALSE)
     
+    db.con <- dbConnect(SQLite(), db.file)
+    
     dbWriteTable(db.con, "probe_align", probe.align.dta, row.names=FALSE)
+    
+    dbDisconnect(db.con)
     
     #snvs
     #all.snp.list <- list(vcf_list=snp.vcf.list, vcf_annot=c(vcf_name="test_1.txt", type="SNV"))
     #populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=all.snp.list, use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
-    populate(test.db, vcf_list=snp.vcf.list, vcf_annot=c(vcf_name="test_1.txt", type="SNV",
+    populate(test.db, vcf_list=snp.vcf.list, vcf_annot=c(vcf_name="test_1.txt", type="SNV"),
           use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
     
     #indels

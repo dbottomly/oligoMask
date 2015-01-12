@@ -62,12 +62,12 @@ om.tab.file <- function() system.file(file.path("extdata", "mogene_1_0_probe_chr
 om.db.file <- function() system.file(file.path("extdata", "NOD_B6_m37_chr19.db"), package="oligoMask")
 om.lo.file <- function() system.file(file.path("extdata", "mogene_1_0_probe_chr19.tab.liftover.txt.gz"), package="oligoMask")
 
-make.ref.dta <- function(vcf.list, vcf_annot)
+make.ref.dta <- function(vcf_list, vcf_annot)
 {
-    #annots <- vcf.list[["vcf_annot"]]
+    #annots <- vcf_list[["vcf_annot"]]
     annots <- vcf_annot
     annot.dta <- matrix(annots, nrow=1, dimnames=list(NULL, names(annots)))
-    ref.dta <- do.call("rbind", lapply(vcf_list, function(x) #vcf.list[["vcf_list"]]
+    ref.dta <- do.call("rbind", lapply(vcf_list, function(x) #vcf_list[["vcf_list"]]
                                        {
                                             vcf.dta <- as.data.frame(x$rowData)[,c("seqnames", "start", "end")]
                                             if (any(is.na(x$GENO$FI)) == FALSE && any(x$GENO$FI %in% c(0,1) == FALSE))
@@ -85,14 +85,14 @@ make.ref.dta <- function(vcf.list, vcf_annot)
     return(cbind(ref.dta, annot.dta[rep(1, nrow(ref.dta)),,drop=FALSE]))
 }
 
-make.allele.dta <- function(vcf.list, vcf_annot)
+make.allele.dta <- function(vcf_list, vcf_annot)
 {
-    #annots <- vcf.list[["vcf_annot"]]
+    #annots <- vcf_list[["vcf_annot"]]
     annots <- vcf_annot
     annot.dta <- matrix(annots, nrow=1, dimnames=list(NULL, names(annots)))
                                
     #Note that the ALT element was changed from comma-delimited to list-based in the current code in bioc 2.13, use the below hack for now which should be backwards compatible 
-    alleles.list <- lapply(vcf_list, function(x)#vcf.list[["vcf_list"]]
+    alleles.list <- lapply(vcf_list, function(x)#vcf_list[["vcf_list"]]
            {
                 return(cbind(as.data.frame(x$rowData)[,c("seqnames", "start", "end")], REF=as.character(x$REF), ALT=sapply(x$ALT, paste, collapse=","), stringsAsFactors=FALSE))
            })
@@ -115,13 +115,13 @@ make.allele.dta <- function(vcf.list, vcf_annot)
     return(cbind(use.allele.dta, annot.dta[rep(1, nrow(use.allele.dta)),,drop=FALSE]))
 }
 
-make.genotype.dta <- function(vcf.list, vcf_annot)
+make.genotype.dta <- function(vcf_list, vcf_annot)
 {
-    #annots <- vcf.list[["vcf_annot"]]
+    #annots <- vcf_list[["vcf_annot"]]
     annots <- vcf_annot
     annot.dta <- matrix(annots, nrow=1, dimnames=list(NULL, names(annots)))
     
-    geno.list <- lapply(vcf_list, function(x) #vcf.list[["vcf_list"]]
+    geno.list <- lapply(vcf_list, function(x) #vcf_list[["vcf_list"]]
            {
                 return(cbind(as.data.frame(x$rowData)[,c("seqnames", "start", "end")], GT=x$GENO$GT, stringsAsFactors=FALSE))
            })
@@ -143,7 +143,7 @@ make.genotype.dta <- function(vcf.list, vcf_annot)
     return(cbind(use.geno, annot.dta[rep(1, nrow(use.geno)),,drop=FALSE]))
 }
 
-granges.to.dta <- function(probe_info)#was x
+granges.to.dta <- function(probe_info, probe_align)#was x
     {
         #only keep the uniquely aligned reads for this purpose
         #unique.reads <- x[["probe_info"]]$fasta_name[x[["probe_info"]]$align_status == "UniqueMapped"]
@@ -161,19 +161,19 @@ granges.to.dta <- function(probe_info)#was x
         return(sub.temp.x)
     }
 
-make.probe.to.snp <- function(vcf.list, vcf_annot)
+make.probe.to.snp <- function(vcf_list, vcf_annot)
 {
-    #annots <- vcf.list[["vcf_annot"]]
+    #annots <- vcf_list[["vcf_annot"]]
 
     #annot.dta <- matrix(annots, nrow=1, dimnames=list(NULL, names(annots)))
     annot.dta <- matrix(vcf_annot, nrow=1, dimnames=list(NULL, names(vcf_annot)))
     
-    #vcf.list <- vcf.list[["vcf_list"]]
+    #vcf_list <- vcf_list[["vcf_list"]]
     
-    p.s.list <- lapply(names(vcf.list), function(x)
+    p.s.list <- lapply(names(vcf_list), function(x)
            {
                 probe.coords <- as.data.frame(matrix(strsplit(x, ":|-")[[1]], nrow=1, dimnames=list(NULL, c("probe_chr", "probe_start", "probe_end"))))
-                ps.dta <- cbind(as.data.frame(vcf.list[[x]]$rowData), probe.coords[rep(1, length(vcf.list[[x]]$rowData)),])
+                ps.dta <- cbind(as.data.frame(vcf_list[[x]]$rowData), probe.coords[rep(1, length(vcf_list[[x]]$rowData)),])
                 sub.ps.dta <- ps.dta[,c("seqnames", "start", "end", "probe_chr", "probe_start", "probe_end")]
                 return(sub.ps.dta)
            })
