@@ -60,6 +60,9 @@ test.SangerTableSchemaList <- function()
     
     dbDisconnect(db.con)
     
+     populate(test.db, vcf_list=snp.vcf.list, vcf_annot=c(vcf_name="test_1.txt", type="SNV"),
+          use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
+    
     #snvs
     #all.snp.list <- list(vcf_list=snp.vcf.list, vcf_annot=c(vcf_name="test_1.txt", type="SNV"))
     #populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=all.snp.list, use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
@@ -70,11 +73,13 @@ test.SangerTableSchemaList <- function()
     
     #all.indel.list <- list(vcf_list=indel.vcf.list, vcf_annot=c(vcf_name="test_2.txt", type="INDEL"))
     #populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=all.indel.list, use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
-    populate(test.db,vcf_list=indel.vcf.list, vcf_annot=c(vcf_name="test_2.txt", type="INDEL",use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
+    populate(test.db,vcf_list=indel.vcf.list, vcf_annot=c(vcf_name="test_2.txt", type="INDEL"),use.tables=c("vcf_annot", "reference", "allele", "genotype", "probe_to_snp"), should.debug=TRUE)
     
     db.con <- dbConnect(SQLite(), dbFile(test.db))
     
     test <- dbGetQuery(db.con, "SELECT * FROM reference NATURAL JOIN genotype NATURAL JOIN allele NATURAL JOIN vcf_annot")
+    
+    dbDisconnect(db.con)
     
     all.vcf <- c(snp.vcf.list, indel.vcf.list)
     
@@ -124,85 +129,7 @@ test.SangerTableSchemaList <- function()
     rownames(test.sort) <- NULL
     
     checkEquals(test.sort, test.target.sort)
-    
-    dbDisconnect(db.con)
 }
-
-#This has since been moved to poplite
-#test.populate.db.tbl.schema.list <- function()
-#{
-#    #populate a subset of the tbsl using the example data  
-#    
-#    .tc.func <- function(x)
-#    {
-#        temp.x <- x[!duplicated(x$Transcript.Cluster.ID),"Transcript.Cluster.ID", drop=FALSE]
-#        names(temp.x) <- "TC_ID"
-#        return(temp.x)
-#    }
-#    
-#    .probe.func <- function(x)
-#    {
-#        temp.x <- x[,c("Probe.ID", "probe.x", "probe.y", "Transcript.Cluster.ID")]
-#        names(temp.x) <- c("Probe_ID", "Probe_X", "Probe_Y", "TC_ID")
-#        return(temp.x)
-#    }
-#    
-#    tab.list <- list(transcript_cluster=list(db.cols=c("TC_PK", "TC_ID"),
-#                                db.schema=c("INTEGER PRIMARY KEY AUTOINCREMENT", "INTEGER"),
-#                                db.constr="",
-#                                dta.func=.tc.func, should.ignore=FALSE, foreign.keys=NULL),
-#        probe=list(db.cols=c("Probe_PK", "Probe_ID", "Probe_X", "Probe_Y", "TC_PK"),
-#                   db.schema=c("INTEGER PRIMARY KEY AUTOINCREMENT", "INTEGER", "INTEGER", "INTEGER", "INTEGER"),
-#                   db.constr="",
-#                   dta.func=.probe.func, should.ignore=FALSE, foreign.keys=list(transcript_cluster=list(ext.keys="TC_ID", local.keys="TC_PK"))))
-#    
-#    tbsl <- new("TableSchemaList", tab.list=tab.list)
-#    
-#    db.con <- dbConnect(SQLite(), tempfile())
-#    
-#    probe.tab.file <- om.tab.file()
-#    
-#    probe.tab <- read.delim(probe.tab.file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-#    
-#    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables=NULL, should.debug=TRUE)
-#
-#    test.query <- dbGetQuery(db.con, "SELECT Probe_ID, Probe_X, Probe_Y, TC_ID FROM probe JOIN transcript_cluster USING (TC_PK)")
-#    names(test.query) <- c("Probe.ID", "probe.x", "probe.y", "Transcript.Cluster.ID")
-#    
-#    test.query <- test.query[do.call("order", test.query),]
-#    rownames(test.query) <- NULL
-#    
-#    sub.probe.tab <- probe.tab[,c("Probe.ID", "probe.x", "probe.y", "Transcript.Cluster.ID")]
-#    sub.probe.tab <- sub.probe.tab[do.call("order", sub.probe.tab),]
-#    rownames(sub.probe.tab) <- NULL
-#    
-#    checkEquals(test.query, sub.probe.tab)
-#    
-#    dbDisconnect(db.con)
-#    
-#    #should be able to easily populate a single table without dependencies
-#    
-#    db.con <- dbConnect(SQLite(), tempfile())
-#    
-#    populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables="transcript_cluster", should.debug=TRUE)
-#    
-#    comp.tab <- .tc.func(probe.tab)
-#    comp.tab <- cbind(TC_PK=1:nrow(comp.tab), comp.tab)
-#    rownames(comp.tab) <- NULL
-#    
-#    test.query.2 <- dbGetQuery(db.con, "SELECT * FROM transcript_cluster")
-#    
-#    checkEquals(comp.tab, test.query.2)
-#    
-#    dbDisconnect(db.con)
-#    
-#    #should throw an error if attempting to populate a table with dependencies
-#    
-#    db.con <- dbConnect(SQLite(), tempfile())
-#    checkException(populate.db.tbl.schema.list(db.con, db.schema=tbsl, ins.vals=probe.tab, use.tables="probe", should.debug=TRUE))
-#    
-#    dbDisconnect(db.con)
-#}
 
 ###still need to fix me:  attributes are not identical across measure variables; they will be dropped
 
