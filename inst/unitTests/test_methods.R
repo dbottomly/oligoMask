@@ -6,7 +6,6 @@ stopifnot(require(BSgenome.Mmusculus.UCSC.mm9))
 stopifnot(require(VariantAnnotation))
 stopifnot(require(reshape2))
 stopifnot(require(oligo))
-stopifnot(require(poplite))
 
 data("SunGeneFS")
 
@@ -115,7 +114,7 @@ test.SangerTableSchemaList <- function()
                 geno.vec <- c(".", as.character(cur.vcf$REF), cur.vcf$ALT)
                 alleles <- geno.vec[as.numeric(allele_num)+2]
                 
-                return(data.frame(ref_id=x, seqnames=as.character(seqnames(cur.vcf$rowData)), start=start(cur.vcf$rowData), end=end(cur.vcf$rowData), filter=filter, geno_chr=geno_chr, allele_num=allele_num, strain=strain, alleles=alleles,  vcf_name=vcf_name, type=type, stringsAsFactors=FALSE))
+                return(data.frame(seqnames=as.character(seqnames(cur.vcf$rowData)), start=start(cur.vcf$rowData), end=end(cur.vcf$rowData), filter=filter, geno_chr=geno_chr, allele_num=allele_num, strain=strain, alleles=alleles,  vcf_name=vcf_name, type=type, stringsAsFactors=FALSE))
            }))
     
     test.target.sort <- test.target[do.call("order", test.target),]
@@ -278,23 +277,26 @@ test.create.sanger.mouse.vcf.db <- function()
     
     #first, creating the database without a package
     
-    create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name, keep.category, window.size, max.mismatch, limit.chr, should.debug, package.info=NULL)
+    sanger.db <- new("VcfDB", db.file=db.name, tbsl=db.schema)
     
+    create.sanger.mouse.vcf.db(sanger.db, vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, keep.category, window.size, max.mismatch, limit.chr, should.debug, package.info=NULL)
     examine.vcf.db(db.name, db.schema, tab.aln, vcf.files, strain.names)
     
     #then after creating the database with a package
     
     db.name <- "test.package"
     
+    sanger.db@db.file <- db.name
+    
     if (file.exists(db.name))
     {
-        unlink(db.name)
+        unlink(db.name,recursive=T)
     }
     
     package.info <- list(AUTHOR="test", AUTHOREMAIL="test@test.com", BOWTIE_PATH="/Users/bottomly/Desktop/github_projects/bowtie_build/bowtie",
                          GENOME_PATH="/Users/bottomly/Desktop/resources/sequences/GRCm38_68", VCF_QUERY_CMD="htscmd vcfquery", VCF_TYPE="CC")
     
-    create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name, keep.category, window.size, max.mismatch, limit.chr, should.debug, package.info=package.info)
+    create.sanger.mouse.vcf.db(sanger.db, vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, keep.category, window.size, max.mismatch, limit.chr, should.debug, package.info=package.info)
     
     examine.vcf.db(file.path(db.name, "inst", "extdata", "package.db"), db.schema, tab.aln, vcf.files, strain.names)
     
@@ -312,7 +314,7 @@ test.create.sanger.mouse.vcf.db <- function()
     #    checkTrue(did.work == 0)
     #}
     
-    unlink(db.name)
+    unlink(db.name, recursive=T)
 }
 
 examine.vcf.db <- function(db.name, db.schema, tab.aln, vcf.files, strain.names)
@@ -367,103 +369,16 @@ examine.vcf.db <- function(db.name, db.schema, tab.aln, vcf.files, strain.names)
     file.remove(db.name)
 }
 
-#Method will no longer exist
-#test.validProbeQuery<- function()
-#{   
-#    var.db <- new("VcfDB", db.path=om.db.file(), tbsl=SangerTableSchemaList(), start.var.table="reference", end.var.table="probe_info", var.mask.probe.id="probe_id", var.mask.var.id="ref_id")
-#    var.mask.par <- VariantMaskParams(var.db=var.db, geno.filter=FALSE, rm.unmap=TRUE, rm.mult=TRUE, mask.type="static")
-#    
-#    db.con <- dbConnect(SQLite(), var.mask.par@var.db@db.path)
-#    
-#    number.multi.un <- dbGetQuery(db.con, "SELECT COUNT(*) FROM probe_info WHERE align_status in ('MultiMapped', 'UnMapped')")
-#    number.un <- dbGetQuery(db.con, "SELECT COUNT(*) FROM probe_info WHERE align_status in ('UnMapped')")
-#    number.multi <- dbGetQuery(db.con, "SELECT COUNT(*) FROM probe_info WHERE align_status in ('MultiMapped')")
-#    number.unique.var <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_align_id)) FROM probe_to_snp")
-#    number.unique.filt.var <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_align_id)) FROM probe_to_snp NATURAL JOIN reference WHERE filter = 'TRUE'")
-#    
-#    target <- "probeset"
-#    
-#    #default setting
-#    var.mask.par@geno.filter <- FALSE
-#    var.mask.par@rm.mult <- TRUE
-#    var.mask.par@rm.unmap <- TRUE
-#    
-#    test.1 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-#    
-#    checkTrue(nrow(test.1) == number.unique.var[,1] + number.multi.un[,1])
-#    
-#    var.mask.par@geno.filter <- TRUE
-#    var.mask.par@rm.mult <- TRUE
-#    var.mask.par@rm.unmap <- TRUE
-#    test.2 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-#    
-#    #this should be a smaller version of test.1 as it is filtered
-#    checkTrue(nrow(test.2) <= nrow(test.1))
-#    rm(test.1)
-#    checkTrue(nrow(test.2) == number.unique.filt.var[,1] + number.multi.un[,1])
-#    rm(test.2)
-#    
-#    var.mask.par@geno.filter <- FALSE
-#    var.mask.par@rm.mult <- FALSE
-#    var.mask.par@rm.unmap <- TRUE
-#    
-#    test.3 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-#    
-#    checkTrue(nrow(test.3) == number.unique.var[,1] + number.un[,1])
-#    rm(test.3)
-#    
-#    var.mask.par@geno.filter <- TRUE
-#    var.mask.par@rm.mult <- FALSE
-#    var.mask.par@rm.unmap <- TRUE
-#    
-#    test.4 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-#    
-#    checkTrue(nrow(test.4) == number.unique.filt.var[,1] + number.un[,1])
-#    rm(test.4)
-#    
-#    var.mask.par@geno.filter <- FALSE
-#    var.mask.par@rm.mult <- TRUE
-#    var.mask.par@rm.unmap <- FALSE
-#    
-#    test.5 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-#    
-#    checkTrue(nrow(test.5) == number.unique.var[,1] + number.multi[,1])
-#    
-#    var.mask.par@geno.filter <- TRUE
-#    var.mask.par@rm.mult <- TRUE
-#    var.mask.par@rm.unmap <- FALSE
-#    
-#    test.6 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-#    
-#    checkTrue(nrow(test.6) == number.unique.filt.var[,1] + number.multi[,1])
-#    
-#    var.mask.par@geno.filter <- FALSE
-#    var.mask.par@rm.mult <- FALSE
-#    var.mask.par@rm.unmap <- FALSE
-#    
-#    test.7 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-#    
-#    checkTrue(nrow(test.7) == number.unique.var[,1])
-#    
-#    var.mask.par@geno.filter <- TRUE
-#    var.mask.par@rm.mult <- FALSE
-#    var.mask.par@rm.unmap <- FALSE
-#    
-#    test.8 <- dbGetQuery(db.con, validProbeQuery(var.mask.par, target, should.add=FALSE))
-#    
-#    checkTrue(nrow(test.8) == number.unique.filt.var[,1])
-#    
-#    dbDisconnect(db.con)
-#}
-
 test.getProbeDf <- function()
-{   
-    var.db <- new("VcfDB", db.path=om.db.file(), tbsl=SangerTableSchemaList(), start.var.table="reference", end.var.table="probe_info", var.mask.probe.id="probe_id", var.mask.var.id="ref_id")
+{
+    DEACTIVATED("Need to revise logic behind this test")
+    
+    var.db <- new("VcfDB", db.file=om.db.file())
     var.mask.par <- VariantMaskParams(var.db=var.db)
     
     #for testing convenience dbGetQuery(db(sun.gene.fs), "detach database var_mask")
     
-    db.con <- dbConnect(SQLite(), var.mask.par@var.db@db.path)
+    db.con <- dbConnect(SQLite(), var.mask.par@var.db@db.file)
     
     #only go through all combinations if full.tests is TRUE as it gets time intenstive
     #otherwise just run the default parameters using 'core' and 'probeset' as the targets
@@ -508,7 +423,7 @@ test.getProbeDf <- function()
 test.maskRMA <- function()
 {
     
-    var.db <- new("VcfDB", db.path=om.db.file(), tbsl=SangerTableSchemaList(), start.var.table="reference", end.var.table="probe_info", var.mask.probe.id="probe_id", var.mask.var.id="ref_id")
+    var.db <- new("VcfDB", db.file=om.db.file())
     var.mask.par <- VariantMaskParams(var.db=var.db)
     
     #test.con <- dbConnect(SQLite(), var.db@db.path)

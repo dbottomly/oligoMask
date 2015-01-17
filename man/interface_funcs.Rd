@@ -39,7 +39,7 @@ Daniel Bottomly
 }
 \examples{
 	data(SunGeneFS)
-	temp.vcf.db <- new("VcfDB", db.path=om.db.file(), tbsl=SangerTableSchemaList())
+	temp.vcf.db <- new("VcfDB", db.file=om.db.file(), tbsl=SangerTableSchemaList())
 	var.mask.pars <- new("VariantMaskParams", var.db=temp.vcf.db)
 	
 	masked.exprs <- maskRMA(SunGeneFS, apply.mask=TRUE, mask.params=var.mask.pars)

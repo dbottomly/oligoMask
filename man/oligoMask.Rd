@@ -7,6 +7,7 @@
 \alias{om.lo.file}
 \alias{test.pd.1.0.st.v1}
 \alias{SunGeneFS}
+\alias{SangerTableSchemaList}
 
 \docType{package}
 \title{
@@ -31,7 +32,7 @@ Built: \tab R 3.0.0; ; 2013-06-10 21:05:11 UTC; unix\cr
 
 Index:
 \preformatted{
-TableSchemaList-class   Class '"TableSchemaList"'
+SangerTableSchemaList   Class '"TableSchemaList"'
 VariantMaskParams-class
                         Class '"VariantMaskParams"'
 VcfDB-class             Class '"VcfDB"'

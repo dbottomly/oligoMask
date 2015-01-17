@@ -447,7 +447,7 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
     {
                     
         #where.base <- paste("WHERE (", var.presence, "= 1 AND", filter.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
-        probe.sum.filt <- filter_(temp.sum, paste(paste(var.presence, "== 1"), "&",
+        probe.sum.filt <- filter_(sum.by.probe, paste(paste(var.presence, "== 1"), "&",
                                              paste(filter.presence, "== 1"), "&",
                                              paste(searchCols(obj=object, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"))
                                              ))
@@ -455,7 +455,7 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
     else
     {
         #where.base <- paste("WHERE (", var.presence, "= 1 AND", searchCols(obj=object@var.db, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"), ")")
-        probe.sum.filt <- filter_(temp.sum, paste(paste(var.presence, "== 1"), "&",
+        probe.sum.filt <- filter_(sum.by.probe, paste(paste(var.presence, "== 1"), "&",
                                              paste(searchCols(obj=object, name="mapping.status"), dict.to.where(object, "mapping.status", "unique"))
                                              ))
     }
@@ -482,7 +482,7 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
             stop("ERROR: rm.unmap and rm.mult should not be false here")
         }
         
-        all.rm.probes <- union(select_(probe.sum.filt, probe.only), select_(filter_(select(object@var.db, .tables="probe_info"), mapping.query), probe.only), copy=T)
+        all.rm.probes <- dplyr::union(select_(probe.sum.filt, probe.only), select_(filter_(select(object@var.db, .tables="probe_info"), mapping.query), probe.only), copy=T)
         
     }else{
         
@@ -493,7 +493,7 @@ setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs
     
     oligo.probe.dta <- oligo:::stArrayPmInfo(object = gene.fs, target = target, sortBy = "fsetid")
     
-    return(oligo.probe.dta[oligo.probe.dta[,object@oligo.probe.id] %in% all.rm.probes[,probe.only] == F,])
+    return(oligo.probe.dta[as.character(oligo.probe.dta[,object@oligo.probe.id]) %in% as.character(as.data.frame(all.rm.probes)[,probe.only]) == F,])
 })
 
 #setMethod("getProbeDf", signature("VariantMaskParams"), function(object, gene.fs, target, sortBy="fsetid")

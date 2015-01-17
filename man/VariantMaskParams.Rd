@@ -7,8 +7,9 @@
 \alias{getProbeDf}
 \alias{maskDb,VariantMaskParams-method}
 \alias{maskDb}
-\alias{validProbeQuery,VariantMaskParams-method}
-\alias{validProbeQuery}
+\alias{searchCols,VariantMaskParams-method}
+\alias{searchDict,VariantMaskParams-method}
+\alias{searchTables,VariantMaskParams-method}
 
 \title{Class \code{"VariantMaskParams"}}
 \description{
@@ -32,8 +33,10 @@ VariantMaskParams constructor function as VariantMaskParams(var.db, geno.filter=
   \describe{
     \item{getProbeDf}{\code{signature(object = "VariantMaskParams"), gene.fs, target, sortBy="fsetid"}: Retrieve a \code{data.frame} describing the probe-(meta)probeset relationships of the probes not masked out based off the database connection in \code{gene.fs} and the summary type specified in \code{target} currently either 'core' or 'probeset'.}
     \item{maskDb}{\code{signature(obj = "VariantMaskParams")}: Retrieve the filename of the variant database}
-    \item{validProbeQuery}{\code{signature(object = "VariantMaskParams"), target, should.add=TRUE}: Returns an SQLite query to be used for selecting the probes to be masked out and excluded from the basic query performed by oligo.}
-	 }
+    \item{searchCols}{\code{signature(obj = "VariantMaskParams")}, name: Internally calls the \code{searchCols} method on the \code{VcfDB}}
+    \item{searchDict}{\code{signature(obj = "VariantMaskParams")},name, value=NULL: Internally calls the \code{searchDict} method on the \code{VcfDB}}
+    \item{searchTables}{\code{signature(obj = "VariantMaskParams")}, name: Internally calls the \code{searchTables} method on the \code{VcfDB}}
+    }
 }
 \author{
 Daniel Bottomly
@@ -43,10 +46,8 @@ Daniel Bottomly
 }
 \examples{
 data(SunGeneFS)
-temp.vcf.db <- new("VcfDB", db.path=om.db.file(), tbsl=SangerTableSchemaList())
+temp.vcf.db <- new("VcfDB", db.file=om.db.file(), tbsl=SangerTableSchemaList())
 var.mask.pars <- new("VariantMaskParams", var.db=temp.vcf.db)
-
-validProbeQuery(var.mask.pars, target="core")
 
 probe.df <- getProbeDf(var.mask.pars, gene.fs=SunGeneFS, target="core")
 head(probe.df)

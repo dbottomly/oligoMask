@@ -1,8 +1,8 @@
 import(methods)
 import(DBI)
 import(RSQLite)
-importFrom(poplite, populate, schema, dbFile, Database)
-importClassesFrom(poplite, Database, TableSchemaList)
+import(poplite)
+
 importClassesFrom(oligoClasses, FeatureSet, GeneFeatureSet)
 importMethodsFrom(oligoClasses, db)
 importMethodsFrom(Biobase, exprs, sampleNames, phenoData,protocolData)
@@ -15,17 +15,23 @@ importClassesFrom(VariantAnnotation, ScanVcfParam)
 importFrom(VariantAnnotation, scanVcf, ScanVcfParam, scanVcfHeader, header, vcfWhich, 'vcfWhich<-')
 importFrom(reshape2, melt)
 importClassesFrom(Biostrings, PDict, DNAStringSet, MIndex)
-importFrom(Biostrings, matchPDict, reverseComplement, unlist)
+importFrom(Biostrings, subseq, PDict, matchPDict, reverseComplement, unlist, DNAStringSet)
 importClassesFrom(BSgenome, BSgenome)
 importClassesFrom(GenomicRanges, GRanges)
-importFrom(GenomicRanges, as.data.frame)
+importFrom(GenomicRanges, as.data.frame, GRanges)
 
 importClassesFrom(Biobase, NChannelSet, eSet, VersionedBiobase, Versioned)
+
+importFrom(GenomeInfoDb, seqnames, seqlevelsStyle, Seqinfo, keepSeqlevels, seqlengths)
+
+importFrom(S4Vectors, Rle, values)
+
+importFrom(IRanges, shift, IRanges)
 
 #core functions for parsing vcf files into a database
 export(make.vcf.table, create.sanger.mouse.vcf.db)
 
-exportClasses(VariantMaskParams, TableSchemaList, VcfDB)
+exportClasses(VariantMaskParams, VcfDB)
 
 #methods for VariantMaskParams
 export(maskDb,getProbeDf, VariantMaskParams)

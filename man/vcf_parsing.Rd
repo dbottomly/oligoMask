@@ -1,5 +1,4 @@
 \name{VCF to DB conversions}
-\alias{populate.db.tbl.schema.list}
 \alias{make.vcf.table}
 \alias{add.vcf.to.db}
 \alias{create.sanger.mouse.vcf.db}
@@ -10,21 +9,20 @@ Functions for conversion of VCF files to SQLite databases
 Functionality to create SQLite databases from several types of VCF including those that represent the genetic diversity of populations (e.g. 1000 genomes) or inbred strains (Sanger mouse genomes project).
 }
 \usage{
-populate.db.tbl.schema.list(db.con, db.schema, ins.vals, use.tables = NULL, should.debug = FALSE)
-make.vcf.table(db.schema, window.size, vcf.name, db.con, probe.grange, vcf.type="SNV", use.tables=NULL, limit=NULL, should.debug=FALSE, vcf.param=NULL, filter.func=NULL, filter.params=list())
-create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name="test.db", keep.category="main", window.size=1000, max.mismatch=1, limit.chr=NULL, should.debug=FALSE, package.info=NULL)
+make.vcf.table(db.obj, window.size, vcf.name, probe.grange, vcf.type="SNV", use.tables=NULL, limit=NULL, should.debug=FALSE, vcf.param=NULL, filter.func=NULL, filter.params=list())
+create.sanger.mouse.vcf.db(sanger.db, vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, keep.category="main", window.size=1000, max.mismatch=1, limit.chr=NULL, should.debug=FALSE, package.info=NULL)
 }
 
 \arguments{
-  \item{db.con}{
-	A connection to an SQLite database.
-}
-  \item{db.schema}{
-	An object of class \code{TableSchemaList}.
-}
-  \item{ins.vals}{
-	List or other type of data to be inserted into the database using the function in the \code{dta.func} element of the TableSchemaList.
-}
+  
+  \item{db.obj}{
+    A \code{VcfDB} object
+  }
+  
+  \item{sanger.db}{
+    A \code{VcfDB} object containing a SangerTableSchemaList() and path to the database or package to be created.
+  }
+  
   \item{use.tables}{
 	The subset of tables the procedure should be limited to or NULL.
 }
@@ -72,9 +70,7 @@ create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, 
 \item{bs.genome}{
 	An object of class \code{BSgenome}
 }
-\item{db.name}{
-	A character vector containing the name of the output database name.
-}
+
 \item{keep.category}{
 	Categories of probes to keep from the \code{probe.tab.file} e.g. 'main'.  These will be the probes that go through the SNP masking process and will be 
 	candidates for removal due to being impacted by variants.
@@ -87,7 +83,7 @@ create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, 
 }
 \item{package.info}{
 	Either NULL or a named list containing the following elements: "AUTHOR", "AUTHOREMAIL", "BOWTIE_PATH", "GENOME_PATH", "VCF_QUERY_CMD", "VCF_TYPE".  If NULL is supplied, a database will
-	be generated at the path specified in db.name.  If the list is provided, a package will be generated containing the database along with other relevant metadata supplemented by the values supplied in
+	be generated at the path specified in dbFile of the Database object.  If the list is provided, a package will be generated containing the database along with other relevant metadata supplemented by the values supplied in
 	package.info.  For this list, AUTHOR and AUTHOREMAIL indicates the author of the package and their email.  BOWTIE_PATH, GENOME_PATH and VCF_QUERY_CMD indicates the path to a bowtie executable, the genome
 	used for creation of the database and the path to a vcf-query tool from vcftools or htslib, these are not necessary unless the package is to be tested afterwards and can be set to an arbitrary string.  They can always be added in later.  VCF_TYPE is simply a desription of the type of VCF database created for instance NODvB6 or CC.
 }
@@ -97,7 +93,7 @@ create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, 
 Daniel Bottomly
 }
 \seealso{
-\code{\link{scanVcf}}, \code{\linkS4class{TableSchemaList}}, \code{\linkS4class{ScanVcfParam}}, \code{\linkS4class{BSgenome}}
+\code{\link{scanVcf}}, \code{\linkS4class{TableSchemaList}}, \code{\linkS4class{Database}}, \code{\linkS4class{ScanVcfParam}}, \code{\linkS4class{BSgenome}}
 }
 \examples{
     if (require(BSgenome.Mmusculus.UCSC.mm9))
@@ -123,9 +119,11 @@ Daniel Bottomly
     	#duplications in this file, remove and recreate...
     	tab.aln <- read.delim(om.lo.file(), sep="\t", header=TRUE, stringsAsFactors=FALSE)
     	limit.chr <- GRanges(seqnames="19", ranges=IRanges(start=min(tab.aln$start), end=max(tab.aln$end)/4), strand="*")
-
-    	create.sanger.mouse.vcf.db(vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, db.schema, db.name, keep.category, window.size, max.mismatch, limit.chr, should.debug)
-
+	
+	sanger.db <- new("VcfDB", db.file=db.name, tbsl=db.schema)
+	
+    	create.sanger.mouse.vcf.db(sanger.db, vcf.files, vcf.labels, probe.tab.file, strain.names, bs.genome, keep.category, window.size, max.mismatch, limit.chr, should.debug)
+	
     	db.con <- dbConnect(SQLite(), db.name)
 
     	var.ovls <- dbGetQuery(db.con, "SELECT * FROM probe_to_snp NATURAL JOIN reference NATURAL JOIN probe_align NATURAL JOIN probe_info limit 5")
