@@ -371,31 +371,28 @@ examine.vcf.db <- function(db.name, db.schema, tab.aln, vcf.files, strain.names)
 
 test.getProbeDf <- function()
 {
-    DEACTIVATED("Need to revise logic behind this test")
+    #DEACTIVATED("Need to revise logic behind this testq")
     
     var.db <- new("VcfDB", db.file=om.db.file())
     var.mask.par <- VariantMaskParams(var.db=var.db)
     
-    #for testing convenience dbGetQuery(db(sun.gene.fs), "detach database var_mask")
+     possib.vals <- expand.grid(list(filter=c(TRUE, FALSE), rm.unmap=c(TRUE,FALSE), rm.multi=c(TRUE, FALSE), target=c("core", "probeset")))
+     possib.vals$target <- as.character(possib.vals$target)
+     
+     db.con <- dbConnect(SQLite(), var.mask.par@var.db@db.file)
+     
+     base.rm.probes <- dbGetQuery(db.con, 'SELECT DISTINCT probe_id FROM probe_info NATURAL JOIN probe_align NATURAL JOIN probe_to_snp
+                                  NATURAL JOIN reference NATURAL JOIN genotype WHERE allele_num != 0 AND strain = "NODShiLtJ"')[,1]
+     filter.probes <- dbGetQuery(db.con, 'SELECT DISTINCT probe_id FROM probe_info NATURAL JOIN probe_align NATURAL JOIN probe_to_snp
+                                  NATURAL JOIN reference WHERE filter = "TRUE"')[,1]
+     unmap.probes <- dbGetQuery(db.con, 'SELECT probe_id FROM probe_info WHERE align_status = "UnMapped"')[,1]
+     mmap.probes <- dbGetQuery(db.con, 'SELECT probe_id FROM probe_info WHERE align_status = "MultiMapped"')[,1]
     
-    db.con <- dbConnect(SQLite(), var.mask.par@var.db@db.file)
-    
-    #only go through all combinations if full.tests is TRUE as it gets time intenstive
-    #otherwise just run the default parameters using 'core' and 'probeset' as the targets
-    if (full.tests == TRUE)
-    {
-        possib.vals <- expand.grid(list(filter=c(TRUE, FALSE), rm.unmap=c(TRUE,FALSE), rm.multi=c(TRUE, FALSE), target=c("core", "probeset")))
-        possib.vals$target <- as.character(possib.vals$target)
-    }
-    else
-    {
-        possib.vals <- data.frame(filter=rep(var.mask.par@geno.filter, 2), rm.unmap=rep(var.mask.par@rm.unmap, 2), rm.multi=rep(var.mask.par@rm.mult, 2), target=c("core", "probeset"), stringsAsFactors=FALSE)
-    }
-   
+    dbDisconnect(db.con)
     
     for (i in 1:nrow(possib.vals))
     {
-        print(i)
+        print(possib.vals[i,])
         var.mask.par@geno.filter <- possib.vals$filter[i]
         var.mask.par@rm.unmap <- possib.vals$rm.unmap[i]
         var.mask.par@rm.mult <- possib.vals$rm.multi[i]
@@ -403,10 +400,27 @@ test.getProbeDf <- function()
         featureInfo.old <- oligo:::stArrayPmInfo(object=SunGeneFS, target=possib.vals$target[i])
         
         featureInfo.mask <- getProbeDf(object=var.mask.par, gene.fs=SunGeneFS, target=possib.vals$target[i])
+          
+          masked.probes <- base.rm.probes
+          
+          if (possib.vals$filter[i] == TRUE)
+          {
+               masked.probes <- intersect(masked.probes, filter.probes)
+          }
+          
+          if (possib.vals$rm.unmap[i] == TRUE)
+          {
+               masked.probes <- union(masked.probes, unmap.probes)
+          }
+          
+          if (possib.vals$rm.multi[i] == TRUE)
+          {
+               masked.probes <- union(masked.probes, mmap.probes)
+          }
         
-        masked.probes <- dbGetQuery(db.con, validProbeQuery(var.mask.par, possib.vals$target[i], should.add=FALSE))
+        #masked.probes <- dbGetQuery(db.con, validProbeQuery(var.mask.par, possib.vals$target[i], should.add=FALSE))
     
-        featureInfo.old.rm <- featureInfo.old[featureInfo.old$fid %in% masked.probes[,var.mask.par@var.db@var.mask.probe.id] == FALSE,]
+        featureInfo.old.rm <- featureInfo.old[featureInfo.old$fid %in% as.character(masked.probes) == FALSE,]
         
         featureInfo.old.rm <- featureInfo.old.rm[do.call("order", featureInfo.old.rm),]
         rownames(featureInfo.old.rm) <- NULL
@@ -416,8 +430,6 @@ test.getProbeDf <- function()
         
         checkEquals(featureInfo.old.rm, featureInfo.mask)
     }
-    
-    dbDisconnect(db.con)
 }
 
 test.maskRMA <- function()
