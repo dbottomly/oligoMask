@@ -371,7 +371,6 @@ examine.vcf.db <- function(db.name, db.schema, tab.aln, vcf.files, strain.names)
 
 test.getProbeDf <- function()
 {
-    #DEACTIVATED("Need to revise logic behind this testq")
     
     var.db <- new("VcfDB", db.file=om.db.file())
     var.mask.par <- VariantMaskParams(var.db=var.db)

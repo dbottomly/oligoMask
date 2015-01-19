@@ -97,14 +97,15 @@ setMethod("show", signature("VcfDB"), function(object)
 			
 			if (isTRUE(all.equal(schema(object), SangerTableSchemaList())))
 			{
-				print('in progress...')
-				#probe.count <- summarize(group_by(select(object, probe_info.probe_id), probe_id), n_distinct(probe_id))
-				#probe.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(probe_id)) FROM probe_info")[,1]
-				#message(paste("Containing alignments for", probe.count, "probes"))
+				probe.count <- as.data.frame(summarize_(select_(object, "probe_info.probe_id"), "COUNT(DISTINCT(probe_id))"))[,1]
+				message(paste("Containing alignments for", probe.count, "probes"))
 				#
+				var.count <- as.data.frame(summarize_(select_(object, "reference.ref_id"), "COUNT(DISTINCT(ref_id))"))[,1]
+				strain.count <- as.data.frame(summarize_(select_(object, "genotype.strain"), "COUNT(DISTINCT(strain))"))[,1]
+				message(paste("Containing", var.count , "variants from", strain.count, "inbred strains"))
+				
 				#var.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(ref_id)) FROM reference")[,1]
 				#strain.count <- dbGetQuery(db.con, "SELECT COUNT(DISTINCT(strain)) FROM genotype")[,1]
-				#message(paste("Containing", var.count , "variants from", strain.count, "inbred strains"))
 			}
 			else
 			{
