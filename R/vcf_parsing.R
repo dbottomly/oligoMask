@@ -397,8 +397,9 @@ create.sanger.mouse.vcf.db <- function(sanger.db, vcf.files, vcf.labels, probe.t
         {
                 stop("ERROR: Unsupported tab file specified")
         }
-		
-	 return(sanger.db)
+	
+	invisible(sanger.db)
+	
 }
 
 #now divide the probes into the different alignment categories

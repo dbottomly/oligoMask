@@ -1,2 +1,2 @@
-importClassesFrom(oligoMask, TableSchemaList, VcfDB)
+importClassesFrom(oligoMask,  VcfDB)
 export('@PKGNAME@')
