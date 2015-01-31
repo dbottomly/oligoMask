@@ -60,10 +60,16 @@ setMethod("getProbeVars", signature("VcfDB"), function(obj, probe.ids)
 				stop("ERROR: probe.ids needs to be a non-empty character vector")
 			}
 			
-			temp.probes <- select(test.db, probe_id, fasta_name, align_status, probe_chr, probe_start, probe_end, seqnames, start,
+			temp.probes <- select(obj, probe_id, fasta_name, align_status, probe_chr, probe_start, probe_end, seqnames, start,
 						end, filter, geno_chr, genotype.allele_num, strain)
 			
-			filt.probes <- filter(temp.probes, probe_id %in% probe.id)
+			if (length(probe.id) > 1)
+			{
+			    filt.probes <- filter_(temp.probes, ~probe_id %in% probe.id)
+			}else(length(probe.id) == 1)
+			{
+			    filt.probes <- filter_(temp.probes, ~probe_id == probe.id)
+			}
 			
 			return(filt.probes)
           })

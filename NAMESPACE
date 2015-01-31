@@ -42,7 +42,7 @@ export(searchTables, searchCols, searchDict, SangerTableSchemaList)
 #methods for VcfDB
 
 #export other functions for use with oligo
-export(maskRMA)
+export(maskRMA, getProbeVars)
 
 #example data
 export(om.vcf.file, om.tab.file, om.db.file, om.lo.file, test.pd.1.0.st.v1)
