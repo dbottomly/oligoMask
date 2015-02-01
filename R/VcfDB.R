@@ -60,26 +60,19 @@ setMethod("getProbeVars", signature("VcfDB"), function(obj, probe.ids)
 				stop("ERROR: probe.ids needs to be a non-empty character vector")
 			}
 			
-			temp.probes <- select(obj, probe_id, fasta_name, align_status, probe_chr, probe_start, probe_end, seqnames, start,
-						end, filter, geno_chr, genotype.allele_num, strain)
+			temp.probes <- select_(obj, "probe_id", "fasta_name", "align_status", "probe_chr", "probe_start", "probe_end", "seqnames", "start",
+						"end", "filter", "geno_chr", "genotype.allele_num", "strain")
 			
-			if (length(probe.id) > 1)
+			if (length(probe.ids) > 1)
 			{
-			    filt.probes <- filter_(temp.probes, ~probe_id %in% probe.id)
-			}else(length(probe.id) == 1)
+			    filt.probes <- filter_(temp.probes, ~probe_id %in% probe.ids)
+			}else
 			{
-			    filt.probes <- filter_(temp.probes, ~probe_id == probe.id)
+			    filt.probes <- filter_(temp.probes, ~probe_id == probe.ids)
 			}
 			
-			return(filt.probes)
+			return(as.data.frame(filt.probes))
           })
-
-###replace with schema...
-#setGeneric("tbsl", def=function(obj, ...) standardGeneric("tbsl"))
-#setMethod("tbsl", signature("VcfDB"), function(obj)
-#          {
-#                return(obj@tbsl)
-#          })
 
 setMethod("show", signature("VcfDB"), function(object)
         {
