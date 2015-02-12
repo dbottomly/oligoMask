@@ -8,6 +8,8 @@ importMethodsFrom(oligoClasses, db)
 importMethodsFrom(Biobase, exprs, sampleNames, phenoData,protocolData)
 importMethodsFrom(oligo, rma)
 
+importFrom(dplyr, summarize_, select_, filter_)
+
 importFrom(Biobase, assayDataNew)
 importFrom(oligo, basicRMA)
 

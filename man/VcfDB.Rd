@@ -13,6 +13,8 @@
 \alias{searchCols}
 \alias{searchDict}
 \alias{searchTables}
+\alias{getProbeVars}
+\alias{getProbeVars,VcfDB-method}
 
 \title{Class \code{"VcfDB"}}
 \description{
@@ -44,6 +46,7 @@ Objects can be created by calls of the form \code{new("VcfDB", ...)}.
     \item{searchCols}{\code{signature(obj = "VcfDB")}, name: Return the column(s) to be searched for a given search label}
     \item{searchDict}{\code{signature(obj = "VcfDB")}, name, value=NULL: Return the database values for a given search label and key}
     \item{searchTables}{\code{signature(obj = "VcfDB")}, name:Return the table name associated with a given search label}
+    \item{getProbeVars}{\code{signature(obj = "VcfDB")}, name:Returns a \code{data.frame} containing information on the masked probes.}
     }
 }
 
